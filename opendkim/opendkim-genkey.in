@@ -128,14 +128,16 @@ if ($showversion)
 chdir($outdir) or die "$progname: $outdir: chdir(): $!";;
 umask(077);
 
+## Check if ed25519 is supported.
 if ($ed25519)
 {
-	$status = system("openssl version 2>/dev/null | grep --silent --ignore-case '^openssl 1.1.1'");
-	if ($status != 0)
-	{
-		print STDERR "$progname: OpenSSL 1.1.1 is required for ED25519 support\n";
-		exit(1);
-	}
+    # Test if OpenSSL actually supports Ed25519 by trying to generate a key
+    $status = system("openssl genpkey -algorithm Ed25519 -out /dev/null 2>/dev/null");
+    if ($status != 0)
+    {
+        print STDERR "$progname: OpenSSL with Ed25519 support is required for ED25519 support\n";
+        exit(1);
+    }
 }
 
 ## generate a private key
