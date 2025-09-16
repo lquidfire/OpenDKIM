@@ -5264,6 +5264,38 @@ dkim_sign(DKIM_LIB *libhandle, const unsigned char *id, void *memclosure,
                signalg == DKIM_SIGN_ED25519SHA256);
 	assert(statp != NULL);
 
+	/* Auto-detect Ed25519 keys when signalg is DKIM_SIGN_DEFAULT */
+	if (signalg == DKIM_SIGN_DEFAULT)
+	{
+		BIO *keybio;
+		EVP_PKEY *pkey = NULL;
+
+		/* Try to load the key to check its type */
+		keybio = BIO_new_mem_buf((void *) secretkey, -1);
+		if (keybio != NULL)
+		{
+			if (strncmp((char *) secretkey, "-----", 5) == 0)
+			{
+				/* PEM format */
+				pkey = PEM_read_bio_PrivateKey(keybio, NULL, NULL, NULL);
+			}
+			else
+			{
+				/* DER format */
+				pkey = d2i_PrivateKey_bio(keybio, NULL);
+			}
+
+			if (pkey != NULL && EVP_PKEY_id(pkey) == EVP_PKEY_ED25519)
+			{
+				signalg = DKIM_SIGN_ED25519SHA256;
+			}
+
+			if (pkey != NULL)
+				EVP_PKEY_free(pkey);
+			BIO_free(keybio);
+		}
+	}
+	/* Check for non-Ed25519 key formats */
 	if (dkim_libfeature(libhandle, DKIM_FEATURE_SHA256))
 	{
 		if (signalg == DKIM_SIGN_DEFAULT)
