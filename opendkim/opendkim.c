@@ -9115,9 +9115,9 @@ dkimf_initcontext(struct dkimf_config *conf)
 #endif /* _FFR_ATPS */
 #ifdef _FFR_REPUTATION
 # ifdef USE_GNUTLS
-#	(void) gnutls_hash_init(&ctx->mctx_hash, GNUTLS_DIG_SHA256);
-# else /* USE_GNUTLS */
-#	SHA256_Init(&ctx->mctx_hash);
+	(void) gnutls_hash_init(&ctx->mctx_hash, GNUTLS_DIG_SHA1);
+ else /* USE_GNUTLS */
+	SHA1_Init(&ctx->mctx_hash);
 # endif /* USE_GNUTLS */
 #endif /* _FFR_REPUTATION */
 
