@@ -2655,6 +2655,8 @@ AC_CONFIG_FILES([	Makefile
 			contrib/init/redhat/opendkim
 			contrib/init/redhat/opendkim-default-keygen
 			contrib/init/solaris/Makefile
+			contrib/keygen/Makefile
+			contrib/keygen/opendkim-keygen.1
 			contrib/ldap/Makefile
 			contrib/lua/Makefile
 			contrib/patches/Makefile

@@ -16967,31 +16967,20 @@ main(int argc, char **argv)
 	if ((curconf->conf_mode & DKIMF_MODE_VERIFIER) != 0 &&
 	    !dkim_libfeature(curconf->conf_libopendkim, DKIM_FEATURE_SHA256))
 	{
-		if (curconf->conf_allowsha1only)
+		if (dolog)
 		{
-			if (dolog)
-			{
-				syslog(LOG_WARNING,
-				       "WARNING: verifier mode operating without rsa-sha256 support");
-			}
+			syslog(LOG_ERR,
+			       "verifier mode operating without rsa-sha256 support; terminating");
 		}
-		else
-		{
-			if (dolog)
-			{
-				syslog(LOG_ERR,
-				       "verifier mode operating without rsa-sha256 support; terminating");
-			}
 
-			fprintf(stderr,
-			        "%s: verify mode requires rsa-sha256 support\n",
-			        progname);
+		fprintf(stderr,
+		        "%s: verify mode requires rsa-sha256 support\n",
+		        progname);
 
-			if (!autorestart && pidfile != NULL)
-				(void) unlink(pidfile);
+		if (!autorestart && pidfile != NULL)
+			(void) unlink(pidfile);
 
-			return EX_CONFIG;
-		}
+		return EX_CONFIG;
 	}
 
 	/* set up for test mode if selected */
