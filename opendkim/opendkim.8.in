@@ -38,6 +38,12 @@ implements the
 standard for signing and verifying e-mail messages on a per-domain basis.
 
 .B opendkim
+supports both RSA and Ed25519 signature algorithms. Ed25519 signatures
+use the algorithm identifier "ed25519-sha256" and provide equivalent
+security to RSA-2048 with significantly smaller signatures and faster
+operations. Ed25519 support requires OpenSSL 1.1.1 or later.
+
+.B opendkim
 uses the
 .I milter
 interface, originally distributed as part of version 8.11 of
@@ -292,8 +298,9 @@ also used in conjunction with
 .TP
 .I \-k keyfile
 Gives the location of a PEM-formatted private key to be used for signing
-all messages.  Ignored if a configuration file is referenced that defines
-a KeyTable.
+all messages. Both RSA and Ed25519 private keys are supported.
+The signing algorithm will be automatically selected based on the key type.
+Ignored if a configuration file is referenced that defines a KeyTable.
 .TP
 .I \-l
 Log via calls to
@@ -381,10 +388,17 @@ specification for details.
 .TP
 .I \-S signalg
 Selects the signing algorithm to use when generating signatures.
-Use 'opendkim \-V' to see the list of supported algorithms.
-The default is
+Supported algorithms include
+.I rsa-sha1,
+.I rsa-sha256,
+and
+.I ed25519-sha256.
+Use 'opendkim \-V' to see the complete list of supported algorithms.
+The default is automatically determined based on the private key type:
+.I ed25519-sha256
+for Ed25519 keys,
 .I rsa-sha256
-if it is available, otherwise it will be
+for RSA keys (if available), otherwise
 .I rsa-sha1.
 
 .TP
