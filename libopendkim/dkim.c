@@ -1155,8 +1155,7 @@ dkim_privkey_load(DKIM *dkim)
 	if (dkim->dkim_mode != DKIM_MODE_SIGN)
 		return DKIM_STAT_INVALID;
 
-	if (dkim->dkim_signalg != DKIM_SIGN_RSASHA1 &&
-	    dkim->dkim_signalg != DKIM_SIGN_RSASHA256 &&
+	if (dkim->dkim_signalg != DKIM_SIGN_RSASHA256 &&
 	    dkim->dkim_signalg != DKIM_SIGN_ED25519SHA256)
 		return DKIM_STAT_INVALID;
 
@@ -2135,10 +2134,6 @@ dkim_siglist_setup(DKIM *dkim)
 
 			switch (signalg)
 			{
-			  case DKIM_SIGN_RSASHA1:
-				hashtype = DKIM_HASHTYPE_SHA1;
-				break;
-
 			  case DKIM_SIGN_RSASHA256:
 				if (dkim_libfeature(lib, DKIM_FEATURE_SHA256))
 				{
@@ -3369,10 +3364,6 @@ dkim_eoh_sign(DKIM *dkim)
 	/* determine hash type */
 	switch (dkim->dkim_signalg)
 	{
-	  case DKIM_SIGN_RSASHA1:
-		hashtype = DKIM_HASHTYPE_SHA1;
-		break;
-
 	  case DKIM_SIGN_RSASHA256:
 	  case DKIM_SIGN_ED25519SHA256:
 		hashtype = DKIM_HASHTYPE_SHA256;
@@ -3839,17 +3830,12 @@ dkim_eom_sign(DKIM *dkim)
 
 	switch (sig->sig_signalg)
 	{
-	  case DKIM_SIGN_RSASHA1:
 	  case DKIM_SIGN_RSASHA256:
 	  {
-		assert(sig->sig_hashtype == DKIM_HASHTYPE_SHA1 ||
-		       sig->sig_hashtype == DKIM_HASHTYPE_SHA256);
+		assert(sig->sig_hashtype == DKIM_HASHTYPE_SHA256);
 
-		if (sig->sig_hashtype == DKIM_HASHTYPE_SHA256)
-		{
-			assert(dkim_libfeature(dkim->dkim_libhandle,
+		assert(dkim_libfeature(dkim->dkim_libhandle,
 		                               DKIM_FEATURE_SHA256));
-		}
 
 		sig->sig_signature = (void *) dkim->dkim_keydata;
 		sig->sig_keytype = DKIM_KEYTYPE_RSA;
@@ -3913,7 +3899,6 @@ dkim_eom_sign(DKIM *dkim)
 	switch (sig->sig_signalg)
 	{
 #ifdef USE_GNUTLS
-	  case DKIM_SIGN_RSASHA1:
 	  case DKIM_SIGN_RSASHA256:
 	  {
 		int alg;
@@ -3925,10 +3910,7 @@ dkim_eom_sign(DKIM *dkim)
 		dd.data = digest;
 		dd.size = diglen;
 
-		if (sig->sig_signalg == DKIM_SIGN_RSASHA1)
-			alg = GNUTLS_DIG_SHA1;
-		else
-			alg = GNUTLS_DIG_SHA256;
+		alg = GNUTLS_DIG_SHA256;
 
 		status = gnutls_privkey_sign_hash(crypto->crypto_privkey, alg,
 		                                  0, &dd,
@@ -3948,7 +3930,6 @@ dkim_eom_sign(DKIM *dkim)
 		break;
 	  }
 #else /* USE_GNUTLS */
-	  case DKIM_SIGN_RSASHA1:
 	  case DKIM_SIGN_RSASHA256:
 	  {
 		int nid;
@@ -3956,12 +3937,7 @@ dkim_eom_sign(DKIM *dkim)
 
 		crypto = (struct dkim_crypto *) sig->sig_signature;
 
-		nid = NID_sha1;
-
-		if (dkim_libfeature(dkim->dkim_libhandle,
-		                    DKIM_FEATURE_SHA256) &&
-		    sig->sig_hashtype == DKIM_HASHTYPE_SHA256)
-			nid = NID_sha256;
+		nid = NID_sha256;
 
 		status = RSA_sign(nid, digest, diglen,
 	                          crypto->crypto_out, (int *) &l,
@@ -4002,9 +3978,6 @@ dkim_eom_sign(DKIM *dkim)
 			dkim_error(dkim,
 			           "failed to initialize digest context");
 
-			RSA_free(crypto->crypto_key);
-			BIO_CLOBBER(crypto->crypto_keydata);
-
 			return DKIM_STAT_INTERNAL;
 		}
 
@@ -4024,8 +3997,7 @@ dkim_eom_sign(DKIM *dkim)
 			           "signature generation failed (status %d, length %d, %s)",
 			           status, l, ERR_error_string(ERR_get_error(), NULL));
 
-			RSA_free(crypto->crypto_key);
-			BIO_CLOBBER(crypto->crypto_keydata);
+			EVP_MD_CTX_free(md_ctx);
 
 			return DKIM_STAT_INTERNAL;
 		}
@@ -5261,9 +5233,8 @@ dkim_sign(DKIM_LIB *libhandle, const unsigned char *id, void *memclosure,
 	assert(bodycanonalg == DKIM_CANON_SIMPLE ||
 	       bodycanonalg == DKIM_CANON_RELAXED);
 	assert(signalg == DKIM_SIGN_DEFAULT ||
-	       signalg == DKIM_SIGN_RSASHA1 ||
-               signalg == DKIM_SIGN_RSASHA256 ||
-               signalg == DKIM_SIGN_ED25519SHA256);
+	       signalg == DKIM_SIGN_RSASHA256 ||
+           signalg == DKIM_SIGN_ED25519SHA256);
 	assert(statp != NULL);
 
 	/* Auto-detect Ed25519 keys when signalg is DKIM_SIGN_DEFAULT */
@@ -5305,14 +5276,9 @@ dkim_sign(DKIM_LIB *libhandle, const unsigned char *id, void *memclosure,
 	}
 	else
 	{
-		if (signalg == DKIM_SIGN_RSASHA256)
-		{
-			*statp = DKIM_STAT_INVALID;
-			return NULL;
-		}
-
-		if (signalg == DKIM_SIGN_DEFAULT)
-			signalg = DKIM_SIGN_RSASHA1;
+		// No SHA-1 fallback - return error
+		*statp = DKIM_STAT_INVALID;
+		return NULL;
 	}
 
 	if (!dkim_strisprint((u_char *) domain) ||
@@ -5478,10 +5444,6 @@ dkim_resign(DKIM *new, DKIM *old, _Bool hdrbind)
 	/* determine hash type */
 	switch (new->dkim_signalg)
 	{
-	  case DKIM_SIGN_RSASHA1:
-		hashtype = DKIM_HASHTYPE_SHA1;
-		break;
-
 	  case DKIM_SIGN_RSASHA256:
 		hashtype = DKIM_HASHTYPE_SHA256;
 		break;
@@ -5749,9 +5711,7 @@ dkim_sig_process(DKIM *dkim, DKIM_SIGINFO *sig)
 # else /* GNUTLS_VERSION_MAJOR == 2 */
 		hash = dkim_libfeature(dkim->dkim_libhandle,
 		                       DKIM_FEATURE_SHA256);
-		hash = (hash && sig->sig_hashtype == DKIM_HASHTYPE_SHA256)
-		       ? GNUTLS_DIG_SHA256
-		       : GNUTLS_DIG_SHA1;
+		hash = GNUTLS_DIG_SHA256;
 
 		signalg = gnutls_pk_to_sign(GNUTLS_PK_RSA, hash);
 		assert(signalg != GNUTLS_SIGN_UNKNOWN);
@@ -5892,12 +5852,7 @@ dkim_sig_process(DKIM *dkim, DKIM_SIGINFO *sig)
 			crypto->crypto_in = sig->sig_sig;
 			crypto->crypto_inlen = sig->sig_siglen;
 
-			nid = NID_sha1;
-
-			if (dkim_libfeature(dkim->dkim_libhandle,
-			                    DKIM_FEATURE_SHA256) &&
-			    sig->sig_hashtype == DKIM_HASHTYPE_SHA256)
-				nid = NID_sha256;
+			nid = NID_sha256;
 
 			vstat = RSA_verify(nid, digest, diglen,
 			                   crypto->crypto_in,
@@ -7613,7 +7568,6 @@ dkim_sig_getreportinfo(DKIM *dkim, DKIM_SIGINFO *sig,
 		switch (sig->sig_hashtype)
 		{
 #ifdef USE_GNUTLS
-		  case DKIM_HASHTYPE_SHA1:
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_sha *sha;
@@ -7631,24 +7585,6 @@ dkim_sig_getreportinfo(DKIM *dkim, DKIM_SIGINFO *sig,
 			break;
 		  }
 #else /* USE_GNUTLS */
-		  case DKIM_HASHTYPE_SHA1:
-		  {
-			struct dkim_sha1 *sha1;
-
-			sha1 = (struct dkim_sha1 *) sig->sig_hdrcanon->canon_hash;
-			if (hfd != NULL)
-				*hfd = sha1->sha1_tmpfd;
-
-			if (bfd != NULL)
-			{
-				sha1 = (struct dkim_sha1 *) sig->sig_bodycanon->canon_hash;
-				*bfd = sha1->sha1_tmpfd;
-			}
-
-			break;
-		  }
-
-# ifdef HAVE_SHA256
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_sha256 *sha256;
@@ -7665,7 +7601,6 @@ dkim_sig_getreportinfo(DKIM *dkim, DKIM_SIGINFO *sig,
 
 			break;
 		  }
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 
 		  default:

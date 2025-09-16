@@ -4,6 +4,8 @@
 **
 **  Copyright (c) 2009-2012, 2014, 2015, 2018, The Trusted Domain Project.
 **  	All rights reserved.
+**
+**  Copyright 2025 OpenDKIM Contributors.
 */
 
 #include "build-config.h"
@@ -60,7 +62,6 @@ struct nametable *sigparams = prv_sigparams;
 
 static struct nametable prv_algorithms[] =	/* signing algorithms */
 {
-	{ "rsa-sha1",		DKIM_SIGN_RSASHA1 },
 	{ "rsa-sha256",		DKIM_SIGN_RSASHA256 },
 	{ "ed25519-sha256",	DKIM_SIGN_ED25519SHA256 },
 	{ NULL,		-1 },
@@ -77,7 +78,6 @@ struct nametable *canonicalizations = prv_canonicalizations;
 
 static struct nametable prv_hashes[] =		/* hashes */
 {
-	{ "sha1",	DKIM_HASHTYPE_SHA1 },
 	{ "sha256",	DKIM_HASHTYPE_SHA256 },
 	{ NULL,		-1 },
 };
