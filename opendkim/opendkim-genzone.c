@@ -1,5 +1,7 @@
 /*
 **  Copyright (c) 2010-2015, The Trusted Domain Project.  All rights reserved.
+**
+**  Copyright 2025 OpenDKIM Contributors.
 */
 
 #include "build-config.h"
