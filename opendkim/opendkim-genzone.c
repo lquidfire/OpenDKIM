@@ -1,5 +1,7 @@
 /*
 **  Copyright (c) 2010-2015, The Trusted Domain Project.  All rights reserved.
+**
+**  Copyright 2025 OpenDKIM Contributors.
 */
 
 #include "build-config.h"
@@ -837,31 +839,52 @@ main(int argc, char **argv)
 			}
 		}
 
-		rsa = EVP_PKEY_get1_RSA(pkey);
-		if (rsa == NULL)
+		#ifdef HAVE_ED25519
+		if (EVP_PKEY_id(pkey) == EVP_PKEY_ED25519)
 		{
-			fprintf(stderr,
-			        "%s: EVP_PKEY_get1_RSA() failed\n",
-			        progname);
-			(void) dkimf_db_close(db);
-			(void) BIO_free(private);
-			(void) EVP_PKEY_free(pkey);
-			(void) BIO_free(outbio);
-			return 1;
+			/* Handle Ed25519 keys - use generic PUBKEY functions */
+			status = PEM_write_bio_PUBKEY(outbio, pkey);
+			if (status == 0)
+			{
+				fprintf(stderr,
+						"%s: PEM_write_bio_PUBKEY() failed\n",
+						progname);
+				(void) dkimf_db_close(db);
+				(void) BIO_free(private);
+				(void) EVP_PKEY_free(pkey);
+				(void) BIO_free(outbio);
+				return 1;
+			}
 		}
-
-		/* convert private to public */
-		status = PEM_write_bio_RSA_PUBKEY(outbio, rsa);
-		if (status == 0)
+		else
+			#endif /* HAVE_ED25519 */
 		{
-			fprintf(stderr,
-			        "%s: PEM_write_bio_RSA_PUBKEY() failed\n",
-			        progname);
-			(void) dkimf_db_close(db);
-			(void) BIO_free(private);
-			(void) EVP_PKEY_free(pkey);
-			(void) BIO_free(outbio);
-			return 1;
+			/* Handle RSA keys - use RSA-specific functions */
+			rsa = EVP_PKEY_get1_RSA(pkey);
+			if (rsa == NULL)
+			{
+				fprintf(stderr,
+						"%s: EVP_PKEY_get1_RSA() failed\n",
+						progname);
+				(void) dkimf_db_close(db);
+				(void) BIO_free(private);
+				(void) EVP_PKEY_free(pkey);
+				(void) BIO_free(outbio);
+				return 1;
+			}
+			/* convert private to public */
+			status = PEM_write_bio_RSA_PUBKEY(outbio, rsa);
+			if (status == 0)
+			{
+				fprintf(stderr,
+						"%s: PEM_write_bio_RSA_PUBKEY() failed\n",
+						progname);
+				(void) dkimf_db_close(db);
+				(void) BIO_free(private);
+				(void) EVP_PKEY_free(pkey);
+				(void) BIO_free(outbio);
+				return 1;
+			}
 		}
 #endif /* USE_GNUTLS */
 

@@ -4,6 +4,8 @@
 **
 **  Copyright (c) 2009, 2010, 2012-2014, 2018, The Trusted Domain Project.
 **    All rights reserved.
+**
+**  Copyright 2025 OpenDKIM Contributors.
 */
 
 #include "build-config.h"
@@ -407,7 +409,6 @@ dkim_test_key(DKIM_LIB *lib, char *selector, char *domain,
 #endif /* USE_GNUTLS */
 
 		sig->sig_signature = (void *) crypto;
-		sig->sig_keytype = DKIM_KEYTYPE_RSA;
 
 #ifdef USE_GNUTLS
 		if (err != NULL)
@@ -417,7 +418,7 @@ dkim_test_key(DKIM_LIB *lib, char *selector, char *domain,
 		return -1;
 #else /* USE_GNUTLS */
 		crypto->crypto_pkey = PEM_read_bio_PrivateKey(keybuf, NULL,
-		                                              NULL, NULL);
+													  NULL, NULL);
 		if (crypto->crypto_pkey == NULL)
 		{
 			BIO_free(keybuf);
@@ -425,27 +426,39 @@ dkim_test_key(DKIM_LIB *lib, char *selector, char *domain,
 			if (err != NULL)
 			{
 				strlcpy(err,
-				        "PEM_read_bio_PrivateKey() failed",
-				        errlen);
+						"PEM_read_bio_PrivateKey() failed",
+						errlen);
 			}
 			return -1;
 		}
 
-		crypto->crypto_key = EVP_PKEY_get1_RSA(crypto->crypto_pkey);
-		if (crypto->crypto_key == NULL)
+		/* Detect key type and handle appropriately */
+		#ifdef HAVE_ED25519
+		if (EVP_PKEY_id(crypto->crypto_pkey) == EVP_PKEY_ED25519)
 		{
-			BIO_free(keybuf);
-			(void) dkim_free(dkim);
-			if (err != NULL)
-			{
-				strlcpy(err, "EVP_PKEY_get1_RSA() failed",
-				        errlen);
-			}
-			return -1;
+			sig->sig_keytype = DKIM_KEYTYPE_ED25519;
+			crypto->crypto_keysize = EVP_PKEY_size(crypto->crypto_pkey);
+			/* Don't extract RSA key for Ed25519 keys */
 		}
-	
-		crypto->crypto_keysize = RSA_size(crypto->crypto_key);
-		crypto->crypto_pad = RSA_PKCS1_PADDING;
+		else
+			#endif /* HAVE_ED25519 */
+		{
+			sig->sig_keytype = DKIM_KEYTYPE_RSA;
+			crypto->crypto_key = EVP_PKEY_get1_RSA(crypto->crypto_pkey);
+			if (crypto->crypto_key == NULL)
+			{
+				BIO_free(keybuf);
+				(void) dkim_free(dkim);
+				if (err != NULL)
+				{
+					strlcpy(err, "EVP_PKEY_get1_RSA() failed",
+							errlen);
+				}
+				return -1;
+			}
+			crypto->crypto_keysize = RSA_size(crypto->crypto_key);
+			crypto->crypto_pad = RSA_PKCS1_PADDING;
+		}
 
 		outkey = BIO_new(BIO_s_mem());
 		if (outkey == NULL)
@@ -457,26 +470,79 @@ dkim_test_key(DKIM_LIB *lib, char *selector, char *domain,
 			return -1;
 		}
 
-		status = i2d_RSA_PUBKEY_bio(outkey, crypto->crypto_key);
-		if (status == 0)
+		#ifdef HAVE_ED25519
+		if (sig->sig_keytype == DKIM_KEYTYPE_ED25519)
 		{
-			BIO_free(keybuf);
-			BIO_free(outkey);
-			(void) dkim_free(dkim);
-			if (err != NULL)
+			/* For Ed25519, export the public key directly */
+			status = i2d_PUBKEY_bio(outkey, crypto->crypto_pkey);
+			if (status == 0)
 			{
-				strlcpy(err, "i2d_RSA_PUBKEY_bio() failed",
-				        errlen);
+				BIO_free(keybuf);
+				BIO_free(outkey);
+				(void) dkim_free(dkim);
+				if (err != NULL)
+				{
+					strlcpy(err, "i2d_PUBKEY_bio() failed",
+							errlen);
+				}
+				return -1;
 			}
-			return -1;
+		}
+		else
+			#endif /* HAVE_ED25519 */
+		{
+			/* RSA key handling */
+			status = i2d_RSA_PUBKEY_bio(outkey, crypto->crypto_key);
+			if (status == 0)
+			{
+				BIO_free(keybuf);
+				BIO_free(outkey);
+				(void) dkim_free(dkim);
+				if (err != NULL)
+				{
+					strlcpy(err, "i2d_RSA_PUBKEY_bio() failed",
+							errlen);
+				}
+				return -1;
+			}
 		}
 
 		(void) BIO_get_mem_data(outkey, &ptr);
 
-		if (BIO_number_written(outkey) == sig->sig_keylen)
-			status = memcmp(ptr, sig->sig_key, sig->sig_keylen);
+		#ifdef HAVE_ED25519
+		if (sig->sig_keytype == DKIM_KEYTYPE_ED25519)
+		{
+			/* For Ed25519, extract raw 32-byte public key from DER structure
+			 * DER format: 30 2a 30 05 06 03 2b 65 70 03 21 00 [32-byte key]
+			 * We need to skip the ASN.1 wrapper and extract just the key */
+
+			int der_len = BIO_number_written(outkey);
+			unsigned char *der_data = (unsigned char *) ptr;
+			unsigned char *raw_key = NULL;
+			int raw_key_len = 0;
+
+			/* Look for the Ed25519 key in the DER structure
+			 * The raw key should be the last 32 bytes after the ASN.1 wrapper */
+			if (der_len >= 32)
+			{
+				raw_key = der_data + (der_len - 32);
+				raw_key_len = 32;
+			}
+
+			if (raw_key != NULL && raw_key_len == sig->sig_keylen)
+				status = memcmp(raw_key, sig->sig_key, sig->sig_keylen);
+			else
+				status = 1;
+		}
 		else
-			status = 1;
+			#endif /* HAVE_ED25519 */
+		{
+			/* RSA key comparison - compare full DER structure */
+			if (BIO_number_written(outkey) == sig->sig_keylen)
+				status = memcmp(ptr, sig->sig_key, sig->sig_keylen);
+			else
+				status = 1;
+		}
 
 		if (status != 0)
 			strlcpy(err, "keys do not match", errlen);

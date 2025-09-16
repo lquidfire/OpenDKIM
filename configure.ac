@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2009-2015, 2018, The Trusted Domain Project.
 #   All rights reserved.
-# 
+#
 
 #
 # Setup
@@ -46,13 +46,13 @@ AC_CONFIG_MACRO_DIR([m4])
 
 #
 # Hexadecimal version, for use in generating dkim.h
-# 
+#
 HEX_VERSION=$(printf %08x $(( ((VERSION_RELEASE << 8 | VERSION_MAJOR_REV) << 8 | VERSION_MINOR_REV) << 8| VERSION_PATCH )))
 AC_SUBST([HEX_VERSION])
 
 #
 # library version, passed to libtool
-# 
+#
 LIBOPENDKIM_VERSION_INFO=$(printf %d:%d:%d LIBVERSION_CURRENT LIBVERSION_REVISION LIBVERSION_AGE)
 AC_SUBST([LIBOPENDKIM_VERSION_INFO])
 
@@ -142,11 +142,11 @@ AC_CHECK_TYPES([useconds_t])
 # See if libopendkim will need -lresolv
 #
 dnscheck='
-#include "confdefs.h" 
+#include "confdefs.h"
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
-#include <resolv.h> 
+#include <resolv.h>
 int main() {
 res_mkquery (0, 0, 0, 0, 0, 0, 0, 0, 0);
 dn_expand (0, 0, 0, 0, 0);
@@ -177,7 +177,7 @@ $dnscheck
 	LIBS="$saved_LIBS"
 ])
 AC_SUBST([LIBRESOLV])
- 
+
 #
 # Checks for header files
 #
@@ -460,7 +460,7 @@ fi
 
 #
 # test coverage/profiling stuff
-# 
+#
 AC_ARG_ENABLE([codecoverage],
 	AS_HELP_STRING([--enable-codecoverage],
 	               [include code coverage/profiling code]))
@@ -588,7 +588,7 @@ AM_CONDITIONAL(GPROF_FILENAMES, test x"$gprof_gmon_out" = x"no")
 
 #
 # opendkim
-# 
+#
 AC_ARG_ENABLE([filter],
               AS_HELP_STRING([--disable-filter],
                              [do not compile the opendkim filter]),
@@ -746,7 +746,7 @@ then
 
 		#if GNUTLS_VERSION_NUMBER < 0x020b07
 		# error GnuTLS 2.11.7 or later required
-		#endif 
+		#endif
 		int main()
 		{
 			return 0;
@@ -1048,7 +1048,7 @@ AC_SUBST(LIBMILTER_LIBS)
 
 #
 # librrd
-# 
+#
 AC_ARG_WITH([librrd],
             AS_HELP_STRING([--with-librrd],
                            [location of librrd includes and library]),
@@ -1062,7 +1062,7 @@ fi
 
 if test \( x"$librrdpath" = x"auto" -o x"$librrdpath" = x"yes" \) -a x"$PKG_CONFIG" != x""
 then
-	PKG_CHECK_MODULES([RRDTOOL], [librrd], 
+	PKG_CHECK_MODULES([RRDTOOL], [librrd],
 	                  [
                           	librrd_found="yes"
 	                  ],
@@ -1124,7 +1124,7 @@ AC_SUBST(RRDTOOL_LIBS)
 
 #
 # libmemcached
-# 
+#
 AC_ARG_WITH([libmemcached],
             AS_HELP_STRING([--with-libmemcached],
                            [location of libmemcached includes and library]),
@@ -1134,7 +1134,7 @@ libmemcache_found="no"
 
 if test \( x"$libmcdpath" = x"auto" -o x"$libmcdpath" = x"yes" \) -a x"$PKG_CONFIG" != x""
 then
-	PKG_CHECK_MODULES([LIBMEMCACHED], [libmemcached >= 0.36], 
+	PKG_CHECK_MODULES([LIBMEMCACHED], [libmemcached >= 0.36],
 	                  [
                           	libmemcache_found="yes"
 	                  	LIBMEMCACHED_INCDIRS="$LIBMEMCACHED_CFLAGS"
@@ -1198,7 +1198,7 @@ main()
 	return 0;
 }
 		])],
-		AC_MSG_RESULT([ok]), 
+		AC_MSG_RESULT([ok]),
 		AC_MSG_ERROR([libmemcached version 0.36 or later required]))
 fi
 
@@ -1422,7 +1422,7 @@ if test \(  x"$trepath" = x"auto" -o x"$trepath" = x"yes" \) -a x"$PKG_CONFIG" !
 then
         PKG_CHECK_MODULES([LIBTRE], [tre >= 0.8.0], [tre_found="yes"],
 	[
-        	PKG_CHECK_MODULES([LIBTRE], [tre >= 0.7.5], 
+        	PKG_CHECK_MODULES([LIBTRE], [tre >= 0.7.5],
 		[
 			tre_found="yes"
 			AC_DEFINE([TRE_PRE_080], 1,
@@ -1654,7 +1654,7 @@ main()
 	return 0;
 }
 				])],
-				AC_MSG_RESULT([ok]), 
+				AC_MSG_RESULT([ok]),
 				AC_MSG_ERROR([Lua version 5.1 or later required]))
 	CPPFLAGS="$saved_CPPFLAGS"
 	AC_DEFINE([USE_LUA], 1, [support for Lua scripting])
@@ -1864,7 +1864,7 @@ main()
 	return 0;
 }
 				])],
-				AC_MSG_RESULT([ok]), 
+				AC_MSG_RESULT([ok]),
 				AC_MSG_ERROR([OpenLDAP version 2.1.3 or later required]))
 	CPPFLAGS="$saved_CPPFLAGS"
 	AC_DEFINE([USE_LDAP], 1, [OpenLDAP support for datasets enabled])
@@ -2114,7 +2114,7 @@ fi
 
 #
 # reputation requires libjansson
-# 
+#
 
 AC_ARG_WITH([libjansson],
             AS_HELP_STRING([--with-libjansson],
@@ -2446,7 +2446,7 @@ AC_DEFINE_UNQUOTED([LIBOPENDKIM_FEATURE_STRING], "$LIBOPENDKIM_FEATURE_STRING",
 
 #
 # setup for testing
-# 
+#
 
 AC_ARG_ENABLE([live-testing],
               AS_HELP_STRING([--disable-live-testing],
@@ -2456,7 +2456,7 @@ AM_CONDITIONAL(LIVE_TESTS, test x"$live_tests" = x"yes")
 
 #
 # specify test socket
-# 
+#
 
 AC_ARG_WITH([test-socket],
             AS_HELP_STRING([--with-test-socket],
@@ -2563,7 +2563,7 @@ AC_SUBST(LIBERL_LIBS)
 
 CPPFLAGS="$CPPFLAGS -DCONFIG_BASE=\\\"$sysconfdir\\\""
 
-test "x$prefix" = xNONE && prefix=$ac_default_prefix 
+test "x$prefix" = xNONE && prefix=$ac_default_prefix
 SYSCONFDIR=`eval echo "$sysconfdir"`
 AC_SUBST([SYSCONFDIR])
 
@@ -2655,6 +2655,8 @@ AC_CONFIG_FILES([	Makefile
 			contrib/init/redhat/opendkim
 			contrib/init/redhat/opendkim-default-keygen
 			contrib/init/solaris/Makefile
+			contrib/keygen/Makefile
+			contrib/keygen/opendkim-keygen.1
 			contrib/ldap/Makefile
 			contrib/lua/Makefile
 			contrib/patches/Makefile
@@ -2673,7 +2675,7 @@ AC_CONFIG_FILES([	Makefile
 		miltertest/Makefile
 		opendkim/Makefile opendkim/opendkim.8 opendkim/opendkim-genkey
 			opendkim/opendkim-genkey.8 opendkim/opendkim-genzone.8
-			opendkim/opendkim-lua.3 
+			opendkim/opendkim-lua.3
 			opendkim/opendkim-testkey.8 opendkim/opendkim-stats.8
 			opendkim/opendkim-testmsg.8 opendkim/opendkim.conf.5
 			opendkim/opendkim.conf.simple
