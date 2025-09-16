@@ -158,27 +158,15 @@ Bug tracking is done via the GitHub,
 reports there, but please check first for older bugs already open,
 or even already closed, before opening a new issue.
 
+## Directory Structure
 
-+---------------------+
-| DIRECTORY STRUCTURE |
-+---------------------+
-
-contrib		A collection of user contributed scripts that may be useful.
-
-docs		A collection of RFCs and drafts related to opendkim.
-
-libar		An optional thread-safe asynchronous resolver library.
-
-libopendkim	A library that implements the proposed DKIM standard.
-
-libopendkim/docs HTML documentation describing the API provided by libopendkim.
-
-libvbr		An optional library that implements Vouch By Reference
-		(VBR, RFC5518).
-
-opendkim	A milter-based filter application which uses libopenkim (and
-		optionally libar) to provide DKIM service via an MTA using
-		the milter protocol.
+* contrib - A collection of user contributed scripts that may be useful.
+* docs - A collection of RFCs and drafts related to opendkim.
+* libar - An optional thread-safe asynchronous resolver library.
+* libopendkim - A library that implements the proposed DKIM standard.
+* libopendkim/docs - HTML documentation describing the API provided by libopendkim.
+* libvbr - An optional library that implements Vouch By Reference (VBR, RFC5518).
+* opendkim - A milter-based filter application which uses libopenkim (and optionally libar) to provide DKIM service via an MTA using the milter protocol.
 
 ## Legality
 
