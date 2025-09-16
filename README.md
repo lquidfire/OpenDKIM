@@ -10,6 +10,10 @@ source library for adding DomainKeys Identified Mail (DKIM) support
 to applications and an example filter application using the milter
 protocol for providing a DKIM service.
 
+## Ed25519 Support
+
+Ed25519 keys are supported! You will need OpenSSL v1.1.1 or higher.
+
 ## Introduction
 
 DKIM (Domain Keys Identified Mail) is an email authentication method,
