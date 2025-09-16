@@ -3,7 +3,6 @@ OpenDKIM up-to-date, to develop it further, and maintain it.
 Please be patient as changes are made - the documentation might
 not always be 100% up-to-date._
 
-
 # OpenDKIM
 
 OpenDKIM is a community effort to develop and maintain both an open
@@ -59,7 +58,7 @@ In order to build OpenDKIM, you will need:
   work.
 * make
 * pkg-config or a compatible replacement.
-* [OpenSSL](https://openssl.org/) >= 1.0.0
+* [OpenSSL](https://openssl.org/) >= 1.0.0. - 
   OpenSSL >= 1.1.1 is required for ED25519 support.
 * Native implementations of `strlcat()` and `strlcpy()`,
   [libbsd](https://libbsd.freedesktop.org/), or some other library that
