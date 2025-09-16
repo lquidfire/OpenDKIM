@@ -177,7 +177,7 @@ struct dkim_sha256
 	int			sha256_tmpfd;
 	BIO *			sha256_tmpbio;
 	SHA256_CTX		sha256_ctx;
-	u_char			sha256_out[SHA256_DIGEST_LENGTH];
+	u_char			sha256_out[EVP_MAX_MD_SIZE];
 };
 # endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
