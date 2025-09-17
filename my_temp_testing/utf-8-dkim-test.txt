@@ -1,0 +1,11 @@
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=münchen.de; s=test2024;
+ h=from:to:subject:date:message-id; t=1726594800;
+ bh=2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=;
+ b=fake+signature+data+here+for+testing+purposes+only
+From: test@münchen.de
+To: recipient@example.com
+Subject: UTF-8 Domain Test
+Date: Tue, 17 Sep 2024 15:00:00 +0000
+Message-ID: <test123@münchen.de>
+
+This is a test message with a UTF-8 domain in the DKIM signature.

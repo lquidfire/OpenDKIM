@@ -6457,32 +6457,40 @@ dkim_header(DKIM *dkim, u_char *hdr, size_t len)
 		return DKIM_STAT_INVALID;
 	dkim->dkim_state = DKIM_STATE_HEADER;
 
-	/* enforce RFC 5322, Section 2.2 */
+	/* enforce RFC 5322, Section 2.2
+	 * Updated in 2025 to allow UTF-8 according to RFC 8616
+	 */
 	colon = NULL;
 	for (c = 0; c < len; c++)
 	{
 		if (colon == NULL)
 		{
-			/*
-			**  Field names are printable ASCII; also tolerate
-			**  plain whitespace.
-			*/
-
+			/* Field names must be ASCII */
 			if (hdr[c] < 32 || hdr[c] > 126)
+			{
+				fprintf(stderr, "DEBUG: Rejecting field name char 0x%02x at pos %zu\n", hdr[c], c);
 				return DKIM_STAT_SYNTAX;
-
+			}
 			/* the colon is special */
 			if (hdr[c] == ':')
 				colon = &hdr[c];
 		}
 		else
 		{
-			/* field bodies are printable ASCII, SP, HT, CR, LF */
-			if (!(hdr[c] != 9 ||  /* HT */
-			      hdr[c] != 10 || /* LF */
-			      hdr[c] != 13 || /* CR */
-			      (hdr[c] >= 32 && hdr[c] <= 126) /* SP, print */ ))
-				return DKIM_STAT_SYNTAX;
+			/* Field bodies: Allow UTF-8 bytes per RFC 8616, validate ASCII */
+			if (hdr[c] < 128) // ASCII character
+			{
+				/* ASCII validation: printable ASCII, SP, HT, CR, LF */
+				if (hdr[c] != 9 &&   /* HT */
+					hdr[c] != 10 &&  /* LF */
+					hdr[c] != 13 &&  /* CR */
+					(hdr[c] < 32 || hdr[c] > 126)) /* Outside printable range */
+				{
+					fprintf(stderr, "DEBUG: Rejecting ASCII field body char 0x%02x at pos %zu\n", hdr[c], c);
+					return DKIM_STAT_SYNTAX;
+				}
+			}
+            fprintf(stderr, "DEBUG: Allowing UTF-8 byte 0x%02x at pos %zu\n", hdr[c], c);
 		}
 	}
 
