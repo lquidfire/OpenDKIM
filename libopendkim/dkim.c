@@ -264,6 +264,48 @@ const u_char *dkim_required_signhdrs[] =
 	NULL
 };
 
+#ifdef HAVE_LIBIDN2
+/*
+ * *  DKIM_CONVERT_DOMAIN -- convert U-label to A-label for DNS lookup
+ **
+ **  Parameters:
+ **  	input -- UTF-8 domain name (U-label)
+ **  	output -- pointer to store converted A-label (caller must free)
+ **
+ **  Return value:
+ **  	DKIM_STAT_OK on success, DKIM_STAT_INTERNAL on error
+ */
+DKIM_STAT
+dkim_convert_domain(const char *input, char **output)
+{
+	int rc;
+
+	assert(input != NULL);
+	assert(output != NULL);
+
+	rc = idn2_to_ascii_8z(input, output, IDN2_NONTRANSITIONAL);
+	if (rc != IDN2_OK)
+	{
+		if (*output != NULL)
+		{
+			idn2_free(*output);
+			*output = NULL;
+		}
+		return DKIM_STAT_INTERNAL;
+	}
+
+	return DKIM_STAT_OK;
+}
+#else /* ! HAVE_LIBIDN2 */
+DKIM_STAT
+dkim_convert_domain(const char *input, char **output)
+{
+	/* Without libidn2, just duplicate the input string */
+	*output = strdup(input);
+	return (*output != NULL) ? DKIM_STAT_OK : DKIM_STAT_INTERNAL;
+}
+#endif /* HAVE_LIBIDN2 */
+
 /* ========================= PRIVATE SECTION ========================= */
 
 /*

@@ -2202,6 +2202,15 @@ then
 fi
 
 #
+# libidn2 (for RFC 8616 internationalized domain names)
+#
+
+PKG_CHECK_MODULES([LIBIDN2], [libidn2 >= 2.0.0])
+AC_DEFINE([HAVE_LIBIDN2], [1], [Define if you have libidn2])
+AC_SUBST(LIBIDN2_CFLAGS)
+AC_SUBST(LIBIDN2_LIBS)
+
+#
 # libdb
 #
 
