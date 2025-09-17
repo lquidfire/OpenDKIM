@@ -783,22 +783,30 @@ dkim_process_set(DKIM *dkim, dkim_set_t type, u_char *str, size_t len,
 			return DKIM_STAT_SYNTAX;
 		}
 
-		/* confirm the "d=" domain name is well formed */
+		/*
+		 * confirm the "d=" domain name is well formed
+		 * UTF-8 bytes (128-255) are allowed per RFC 8616
+		 */
 		value = dkim_param_get(set, (u_char *) "d");
 		for (p = value; *p != '\0'; p++)
 		{
-			if (!(isalpha(*p) ||
-			      isdigit(*p) ||
-			      *p == '-' ||
-			      *p == '_' ||
-			      *p == '.'))
+			unsigned char ch = (unsigned char)*p;
+
+			if (ch < 128) // ASCII character
 			{
-				dkim_error(dkim, "malformed \"d=\" tag value");
-				if (syntax)
-					dkim_set_free(dkim, set);
-				else
-					set->set_bad = TRUE;
-				return DKIM_STAT_SYNTAX;
+				if (!(isalpha(ch) ||
+				    isdigit(ch) ||
+				    ch == '-' ||
+				    ch == '_' ||
+				    ch == '.'))
+				{
+					dkim_error(dkim, "malformed \"d=\" tag value");
+					if (syntax)
+						dkim_set_free(dkim, set);
+					else
+						set->set_bad = TRUE;
+					return DKIM_STAT_SYNTAX;
+				}
 			}
 		}
 
@@ -6463,34 +6471,29 @@ dkim_header(DKIM *dkim, u_char *hdr, size_t len)
 	colon = NULL;
 	for (c = 0; c < len; c++)
 	{
+		unsigned char ch = (unsigned char)hdr[c];  // Force unsigned
+
 		if (colon == NULL)
 		{
 			/* Field names must be ASCII */
-			if (hdr[c] < 32 || hdr[c] > 126)
-			{
-				fprintf(stderr, "DEBUG: Rejecting field name char 0x%02x at pos %zu\n", hdr[c], c);
+			if (ch < 32 || ch > 126)
 				return DKIM_STAT_SYNTAX;
-			}
 			/* the colon is special */
-			if (hdr[c] == ':')
+			if (ch == ':')
 				colon = &hdr[c];
 		}
 		else
 		{
 			/* Field bodies: Allow UTF-8 bytes per RFC 8616, validate ASCII */
-			if (hdr[c] < 128) // ASCII character
+			if (ch < 128) // ASCII character
 			{
 				/* ASCII validation: printable ASCII, SP, HT, CR, LF */
-				if (hdr[c] != 9 &&   /* HT */
-					hdr[c] != 10 &&  /* LF */
-					hdr[c] != 13 &&  /* CR */
-					(hdr[c] < 32 || hdr[c] > 126)) /* Outside printable range */
-				{
-					fprintf(stderr, "DEBUG: Rejecting ASCII field body char 0x%02x at pos %zu\n", hdr[c], c);
+				if (ch != 9 &&   /* HT */
+					ch != 10 &&  /* LF */
+					ch != 13 &&  /* CR */
+					(ch < 32 || ch > 126)) /* Outside printable range */
 					return DKIM_STAT_SYNTAX;
-				}
 			}
-            fprintf(stderr, "DEBUG: Allowing UTF-8 byte 0x%02x at pos %zu\n", hdr[c], c);
 		}
 	}
 
