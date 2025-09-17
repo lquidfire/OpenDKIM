@@ -240,7 +240,6 @@ struct dkimf_config
 	_Bool		conf_milterv2;		/* using milter v2? */
 	_Bool		conf_fixcrlf;		/* fix bare CRs and LFs? */
 	_Bool		conf_logwhy;		/* log mode decision logic */
-	_Bool		conf_allowsha1only;	/* allow rsa-sha1 verifying */
 	_Bool		conf_stricthdrs;	/* strict header checks */
 	_Bool		conf_keeptmpfiles;	/* keep temporary files */
 	_Bool		conf_multisig;		/* multiple signatures */
@@ -631,7 +630,6 @@ struct lookup dkimf_canon[] =
 
 struct lookup dkimf_sign[] =
 {
-	{ "rsa-sha1",		DKIM_SIGN_RSASHA1 },
 	{ "rsa-sha256",		DKIM_SIGN_RSASHA256 },
 	{ "ed25519-sha256",	DKIM_SIGN_ED25519SHA256 },
 	{ NULL,			-1 },
@@ -642,7 +640,6 @@ struct lookup dkimf_atpshash[] =
 #ifdef HAVE_SHA256
 	{ "sha256",		1 },
 #endif /* HAVE_SHA256 */
-	{ "sha1",		1 },
 	{ "none",		1 },
 	{ NULL,			-1 },
 };
@@ -6538,10 +6535,6 @@ dkimf_config_load(struct config *data, struct dkimf_config *conf,
 		}
 #endif /* SMFIF_QUARANTINE */
 
-		(void) config_get(data, "AllowSHA1Only",
-		                  &conf->conf_allowsha1only,
-		                  sizeof conf->conf_allowsha1only);
-
 #ifdef USE_LDAP
 		btmp = FALSE;
 		(void) config_get(data, "LDAPDisableCache", &btmp, sizeof btmp);
@@ -9123,7 +9116,7 @@ dkimf_initcontext(struct dkimf_config *conf)
 #ifdef _FFR_REPUTATION
 # ifdef USE_GNUTLS
 	(void) gnutls_hash_init(&ctx->mctx_hash, GNUTLS_DIG_SHA1);
-# else /* USE_GNUTLS */
+ else /* USE_GNUTLS */
 	SHA1_Init(&ctx->mctx_hash);
 # endif /* USE_GNUTLS */
 #endif /* _FFR_REPUTATION */
@@ -16974,31 +16967,20 @@ main(int argc, char **argv)
 	if ((curconf->conf_mode & DKIMF_MODE_VERIFIER) != 0 &&
 	    !dkim_libfeature(curconf->conf_libopendkim, DKIM_FEATURE_SHA256))
 	{
-		if (curconf->conf_allowsha1only)
+		if (dolog)
 		{
-			if (dolog)
-			{
-				syslog(LOG_WARNING,
-				       "WARNING: verifier mode operating without rsa-sha256 support");
-			}
+			syslog(LOG_ERR,
+			       "verifier mode operating without rsa-sha256 support; terminating");
 		}
-		else
-		{
-			if (dolog)
-			{
-				syslog(LOG_ERR,
-				       "verifier mode operating without rsa-sha256 support; terminating");
-			}
 
-			fprintf(stderr,
-			        "%s: verify mode requires rsa-sha256 support\n",
-			        progname);
+		fprintf(stderr,
+		        "%s: verify mode requires rsa-sha256 support\n",
+		        progname);
 
-			if (!autorestart && pidfile != NULL)
-				(void) unlink(pidfile);
+		if (!autorestart && pidfile != NULL)
+			(void) unlink(pidfile);
 
-			return EX_CONFIG;
-		}
+		return EX_CONFIG;
 	}
 
 	/* set up for test mode if selected */

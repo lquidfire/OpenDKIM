@@ -161,15 +161,6 @@ struct dkim_sha
 	u_char *		sha_out;
 };
 #else /* USE_GNUTLS */
-/* struct dkim_sha1 -- stuff needed to do a sha1 hash */
-struct dkim_sha1
-{
-	int			sha1_tmpfd;
-	BIO *			sha1_tmpbio;
-	SHA_CTX			sha1_ctx;
-	u_char			sha1_out[SHA_DIGEST_LENGTH];
-};
-
 # ifdef HAVE_SHA256
 /* struct dkim_sha256 -- stuff needed to do a sha256 hash */
 struct dkim_sha256

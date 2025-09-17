@@ -389,7 +389,6 @@ specification for details.
 .I \-S signalg
 Selects the signing algorithm to use when generating signatures.
 Supported algorithms include
-.I rsa-sha1,
 .I rsa-sha256,
 and
 .I ed25519-sha256.
@@ -398,8 +397,7 @@ The default is automatically determined based on the private key type:
 .I ed25519-sha256
 for Ed25519 keys,
 .I rsa-sha256
-for RSA keys (if available), otherwise
-.I rsa-sha1.
+for RSA keys.
 
 .TP
 .I \-t testfiles
