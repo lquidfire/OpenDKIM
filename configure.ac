@@ -796,7 +796,7 @@ fi
 
 if test \( "$sslpath" = "auto" -o x"$sslpath" = x"yes" \) -a x"$PKG_CONFIG" != x""
 then
-	PKG_CHECK_MODULES([LIBCRYPTO], [openssl >= 0.9.7],
+	PKG_CHECK_MODULES([LIBCRYPTO], [openssl >= 1.0.0],
 	                  [openssl_found="yes"],
 	                  [openssl_found="no"
 	                   AC_MSG_WARN([pkg-config for openssl not found, trying manual search...])
