@@ -54,6 +54,69 @@ extern void dkim_error __P((DKIM *, const char *, ...));
 #endif /* ! T_RRSIG */
 
 /*
+ * *  DKIM_CONVERT_DOMAIN_FOR_DNS -- helper function to convert UTF-8 domains for DNS
+ **
+ **  Parameters:
+ **      dkim -- DKIM handle for error reporting
+ **      domain -- domain to convert (UTF-8 or ASCII)
+ **      ascii_out -- pointer to store ASCII domain (caller must free)
+ **
+ **  Return value:
+ **      DKIM_STAT_OK -- success
+ **      DKIM_STAT_SYNTAX -- conversion failed
+ **      DKIM_STAT_INTERNAL -- memory allocation failed
+ **
+ **  Notes:
+ **      Internal helper that checks if conversion is needed and performs it
+ */
+
+static DKIM_STAT
+dkim_convert_domain_for_dns(DKIM *dkim, const char *domain, char **ascii_out)
+{
+	const char *p;
+	_Bool has_utf8 = FALSE;
+
+	assert(dkim != NULL);
+	assert(domain != NULL);
+	assert(ascii_out != NULL);
+
+	*ascii_out = NULL;
+
+	/* Check if domain contains UTF-8 characters */
+	for (p = domain; *p != '\0'; p++)
+	{
+		if (!isascii(*p))
+		{
+			has_utf8 = TRUE;
+			break;
+		}
+	}
+
+	if (has_utf8)
+	{
+		/* Convert UTF-8 domain to ASCII */
+		DKIM_STAT result = dkim_convert_domain(domain, ascii_out);
+		if (result != DKIM_STAT_OK)
+		{
+			dkim_error(dkim, "failed to convert UTF-8 domain '%s' for DNS lookup", domain);
+			return result;
+		}
+	}
+	else
+	{
+		/* ASCII domain - just duplicate it */
+		*ascii_out = strdup(domain);
+		if (*ascii_out == NULL)
+		{
+			dkim_error(dkim, "unable to allocate memory for domain copy");
+			return DKIM_STAT_INTERNAL;
+		}
+	}
+
+	return DKIM_STAT_OK;
+}
+
+/*
 **  DKIM_GET_KEY_DNS -- retrieve a DKIM key from DNS
 **
 **  Parameters:
@@ -103,8 +166,34 @@ dkim_get_key_dns(DKIM *dkim, DKIM_SIGINFO *sig, u_char *buf, size_t buflen)
 
 	lib = dkim->dkim_libhandle;
 
+	/* Convert UTF-8 domain and selector to ASCII for DNS lookup */
+	char *ascii_domain = NULL;
+	char *ascii_selector = NULL;
+	DKIM_STAT conv_result;
+
+	conv_result = dkim_convert_domain((char *)sig->sig_domain, &ascii_domain);
+	if (conv_result != DKIM_STAT_OK)
+	{
+		dkim_error(dkim, "failed to convert UTF-8 domain for DNS lookup");
+		return conv_result;
+	}
+
+	conv_result = dkim_convert_domain((char *)sig->sig_selector, &ascii_selector);
+	if (conv_result != DKIM_STAT_OK)
+	{
+		free(ascii_domain);
+		dkim_error(dkim, "failed to convert UTF-8 selector for DNS lookup");
+		return conv_result;
+	}
+
+	/* Build DNS query name using ASCII components */
 	n = snprintf((char *) qname, sizeof qname - 1, "%s.%s.%s",
-	             sig->sig_selector, DKIM_DNSKEYNAME, sig->sig_domain);
+				 ascii_selector, DKIM_DNSKEYNAME, ascii_domain);
+
+	/* Clean up converted domains */
+	free(ascii_domain);
+	free(ascii_selector);
+
 	if (n == -1 || n > sizeof qname - 1)
 	{
 		dkim_error(dkim, "key query name too large");
@@ -457,8 +546,36 @@ dkim_get_key_file(DKIM *dkim, DKIM_SIGINFO *sig, u_char *buf, size_t buflen)
 		return DKIM_STAT_KEYFAIL;
 	}
 
-	n = snprintf(name, sizeof name, "%s.%s.%s", sig->sig_selector,
-	             DKIM_DNSKEYNAME, sig->sig_domain);
+	/* Convert UTF-8 domain and selector to ASCII for file lookup */
+	char *ascii_domain = NULL;
+	char *ascii_selector = NULL;
+	DKIM_STAT conv_result;
+
+	conv_result = dkim_convert_domain((char *)sig->sig_domain, &ascii_domain);
+	if (conv_result != DKIM_STAT_OK)
+	{
+		fclose(f);
+		dkim_error(dkim, "failed to convert UTF-8 domain for file lookup");
+		return conv_result;
+	}
+
+	conv_result = dkim_convert_domain((char *)sig->sig_selector, &ascii_selector);
+	if (conv_result != DKIM_STAT_OK)
+	{
+		free(ascii_domain);
+		fclose(f);
+		dkim_error(dkim, "failed to convert UTF-8 selector for file lookup");
+		return conv_result;
+	}
+
+	/* Build key name using ASCII components */
+	n = snprintf(name, sizeof name, "%s.%s.%s",
+				 ascii_selector, DKIM_DNSKEYNAME, ascii_domain);
+
+	/* Clean up converted domains */
+	free(ascii_domain);
+	free(ascii_selector);
+
 	if (n == -1 || n > sizeof name)
 	{
 		dkim_error(dkim, "key query name too large");

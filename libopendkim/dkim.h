@@ -439,6 +439,10 @@ extern DKIM *dkim_sign __P((DKIM_LIB *libhandle, const unsigned char *id,
 extern DKIM *dkim_verify __P((DKIM_LIB *libhandle, const unsigned char *id,
                               void *memclosure, DKIM_STAT *statp));
 
+
+/* Function prototype for domain conversion */
+extern DKIM_STAT dkim_convert_domain __P((const char *input, char **output));
+
 /*
 **  DKIM_RESIGN -- bind a new signing handle to a verifying handle
 **

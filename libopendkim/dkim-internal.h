@@ -51,9 +51,6 @@
 # include <idn2.h>
 #endif /* HAVE_LIBIDN2 */
 
-/* Function prototype for domain conversion */
-extern DKIM_STAT dkim_convert_domain(const char *input, char **output);
-
 /* limits, macros, etc. */
 #define	BUFRSZ			1024	/* base temp buffer size */
 #define	BASE64SIZE(x)		(((x + 2) / 3) * 4)

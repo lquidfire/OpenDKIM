@@ -4,6 +4,8 @@
 **
 **  Copyright (c) 2009-2013, 2015, The Trusted Domain Project.
 **    All rights reserved.
+**
+**	Copyright 2025 OpenDKIM contributors
 */
 
 #include "build-config.h"
@@ -951,4 +953,77 @@ dkim_strisprint(unsigned char *str)
 	}
 
 	return TRUE;
+}
+
+/*  DKIM_CONVERT_DOMAIN -- convert UTF-8 domain to ASCII (A-label)
+**
+**  Parameters:
+**  	input -- UTF-8 domain string to convert
+**  	output -- pointer to store ASCII domain (caller must free)
+**
+**  Return value:
+**  	DKIM_STAT_OK -- conversion successful
+**  	DKIM_STAT_INTERNAL -- memory allocation failed
+**  	DKIM_STAT_SYNTAX -- conversion failed
+**  	DKIM_STAT_INVALID -- invalid parameters
+**
+**  Notes:
+**  	Based on OpenARC's implementation. Converts UTF-8 U-labels
+**  	to ASCII A-labels using libidn2 per RFC 8616. The output
+**  	string must be freed by the caller using free().
+**
+**  	If HAVE_LIBIDN2 is not defined, the function simply duplicates
+**  	the input string, providing basic compatibility.
+*/
+
+DKIM_STAT
+dkim_convert_domain(const char *input, char **output)
+{
+	#ifdef HAVE_LIBIDN2
+	int result;
+	char *converted = NULL;
+
+	if (input == NULL || output == NULL)
+		return DKIM_STAT_INVALID;
+
+	*output = NULL;
+
+	/* Handle empty string */
+	if (input[0] == '\0')
+		return DKIM_STAT_INVALID;
+
+	/* Use libidn2 to convert UTF-8 domain to ASCII */
+	result = idn2_to_ascii_8z(input, &converted, IDN2_NONTRANSITIONAL);
+
+	if (result != IDN2_OK)
+	{
+		/* Clean up on error */
+		if (converted != NULL)
+			idn2_free(converted);
+		return DKIM_STAT_SYNTAX;
+	}
+
+	/* Make a copy that can be freed with standard free() */
+	*output = strdup(converted);
+	idn2_free(converted);
+
+	if (*output == NULL)
+		return DKIM_STAT_INTERNAL;
+
+	return DKIM_STAT_OK;
+	#else /* ! HAVE_LIBIDN2 */
+	/* No IDN support - just copy the input as-is */
+	if (input == NULL || output == NULL)
+		return DKIM_STAT_INVALID;
+
+	/* Handle empty string */
+	if (input[0] == '\0')
+		return DKIM_STAT_INVALID;
+
+	*output = strdup(input);
+	if (*output == NULL)
+		return DKIM_STAT_INTERNAL;
+
+	return DKIM_STAT_OK;
+	#endif /* HAVE_LIBIDN2 */
 }

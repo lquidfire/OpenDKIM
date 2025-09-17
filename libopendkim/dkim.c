@@ -264,48 +264,6 @@ const u_char *dkim_required_signhdrs[] =
 	NULL
 };
 
-#ifdef HAVE_LIBIDN2
-/*
- * *  DKIM_CONVERT_DOMAIN -- convert U-label to A-label for DNS lookup
- **
- **  Parameters:
- **  	input -- UTF-8 domain name (U-label)
- **  	output -- pointer to store converted A-label (caller must free)
- **
- **  Return value:
- **  	DKIM_STAT_OK on success, DKIM_STAT_INTERNAL on error
- */
-DKIM_STAT
-dkim_convert_domain(const char *input, char **output)
-{
-	int rc;
-
-	assert(input != NULL);
-	assert(output != NULL);
-
-	rc = idn2_to_ascii_8z(input, output, IDN2_NONTRANSITIONAL);
-	if (rc != IDN2_OK)
-	{
-		if (*output != NULL)
-		{
-			idn2_free(*output);
-			*output = NULL;
-		}
-		return DKIM_STAT_INTERNAL;
-	}
-
-	return DKIM_STAT_OK;
-}
-#else /* ! HAVE_LIBIDN2 */
-DKIM_STAT
-dkim_convert_domain(const char *input, char **output)
-{
-	/* Without libidn2, just duplicate the input string */
-	*output = strdup(input);
-	return (*output != NULL) ? DKIM_STAT_OK : DKIM_STAT_INTERNAL;
-}
-#endif /* HAVE_LIBIDN2 */
-
 /* ========================= PRIVATE SECTION ========================= */
 
 /*
@@ -585,18 +543,24 @@ dkim_process_set(DKIM *dkim, dkim_set_t type, u_char *str, size_t len,
 	set->set_udata = udata;
 	set->set_bad = FALSE;
 
+	/* UTF-8 compatible validation): */
 	for (p = hcopy; *p != '\0'; p++)
 	{
-		if (!isascii(*p) || (!isprint(*p) && !isspace(*p)))
+		/* Allow UTF-8 bytes per RFC 8616, but validate ASCII characters */
+		if (isascii(*p))
 		{
-			dkim_error(dkim,
-			           "invalid character (ASCII 0x%02x at offset %d) in %s data",
-			           *p, p - hcopy, settype);
-			if (syntax)
-				dkim_set_free(dkim, set);
-			else
-				set->set_bad = TRUE;
-			return DKIM_STAT_SYNTAX;
+			/* For ASCII characters, enforce printability/whitespace rules */
+			if (!isprint(*p) && !isspace(*p))
+			{
+				dkim_error(dkim,
+						   "invalid ASCII character (0x%02x at offset %d) in %s data",
+						   *p, p - hcopy, settype);
+				if (syntax)
+					dkim_set_free(dkim, set);
+				else
+					set->set_bad = TRUE;
+				return DKIM_STAT_SYNTAX;
+			}
 		}
 
 		switch (state)
