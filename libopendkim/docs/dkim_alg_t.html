@@ -24,9 +24,9 @@
 <th width="80">Possible Values</th>
 <td>
 <ul>
-<li> <tt>DKIM_SIGN_RSASHA1</tt> -- use an RSA-signed SHA1 hash of the message's
+<li> <tt>DKIM_SIGN_RSASHA256</tt> -- use an RSA-signed SHA256 hash of the message's
      headers and body
-<li> <tt>DKIM_SIGN_RSASHA256</tt> -- use an RSA-signed SHA256 hash of the
+<li> <tt>DKIM_SIGN_ED25519SHA256</tt> -- use an Ed25519-signed SHA256 hash of the
      message's headers and body
 </ul>
 </td>
@@ -38,8 +38,8 @@
 <th valign="top" align=left>NOTES</th> 
 <td>
 <ul>
-<li><tt>DKIM_SIGN_RSASHA256</tt> is only available if the <b>OpenSSL</b>
-    available at compile-time supported the SHA256 algorithm.
+<li><tt>DKIM_SIGN_ED25519SHA256</tt> is only available if the <b>OpenSSL</b>
+    available at compile-time supported the Ed25519 algorithm.
 </ul>
 </td>
 </tr>
@@ -51,6 +51,9 @@ Copyright (c) 2005-2007 Sendmail, Inc. and its suppliers.
 All rights reserved.
 <br>
 Copyright (c) 2009, 2010, The Trusted Domain Project.  All rights reserved.
+
+<br>
+Copyright 2025 OpenDKIM contributors
 
 <br>
 By using this file, you agree to the terms and conditions set

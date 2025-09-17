@@ -48,12 +48,6 @@ default to 0, and string and dataset values default to being undefined.
 
 .SH PARAMETERS
 .TP
-.I AllowSHA1Only (Boolean)
-Permit verify mode when only SHA1 support is available.  RFC6376 requires
-that verifiers implement both SHA1 and SHA256 support.  Setting this
-feature changes the absence of SHA256 support from an error to a warning.
-
-.TP
 .I AlwaysAddARHeader (Boolean)
 Add an "Authentication-Results:" header field even to unsigned messages
 from domains with no "signs all" policy.  The reported DKIM result
@@ -938,11 +932,10 @@ for details. @LUA_MANNOTICE@
 .TP
 .I SignatureAlgorithm (string)
 Selects the signing algorithm to use when generating signatures.
-Use 'opendkim \-V' to see the list of supported algorithms.
+Use 'opendkim \-V' to see the list of supported algorithms (Ed25519 is supported).
 The default is
 .I rsa-sha256
-if it is available, otherwise it will be
-.I rsa-sha1.
+ .
 
 .TP
 .I SignatureTTL (integer)

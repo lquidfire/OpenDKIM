@@ -113,7 +113,6 @@ typedef int dkim_set_t;
 */
 
 #define DKIM_HASHTYPE_UNKNOWN	(-1)
-#define DKIM_HASHTYPE_SHA1	0
 #define DKIM_HASHTYPE_SHA256	1
 
 /*

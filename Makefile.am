@@ -33,29 +33,18 @@ dist_noinst_SCRIPTS = libtool
 
 DISTCLEANFILES = opendkim-@VERSION@.tar.gz
 
-# TODO: get configure.ac to generate --enable-{feature} for all
-# non-experimental features and substitute it here e.g  @SUPPORTED_FEATURES@.
-# Perhaps all features would enable a more comprehensive test coverage map
-# though.
-DISTCHECK_CONFIGURE_FLAGS=--enable-vbr --with-lua --enable-stats --with-odbx --with-db --with-openssl=/usr/local --enable-atps --enable-replace_rules
-
-$(DIST_ARCHIVES): distcheck
-
-$(DIST_ARCHIVES).md5: $(DIST_ARCHIVES)
-	md5 $? > $@ || md5sum $? > $@
-
-$(DIST_ARCHIVES).sha1: $(DIST_ARCHIVES)
-	sha1 $? > $@ || sha1sum $? > $@
-
+$(DIST_ARCHIVES).sha256: $(DIST_ARCHIVES)
+	sha256 $? > $@ || sha256sum $? > $@
+$(DIST_ARCHIVES).sha512: $(DIST_ARCHIVES)
+	sha512 $? > $@ || sha512sum $? > $@
 $(DIST_ARCHIVES).asc: $(DIST_ARCHIVES)
 	gpg -a -u security@opendkim.org --detach-sign $?
-
-push: $(DIST_ARCHIVES) $(DIST_ARCHIVES).sha1 $(DIST_ARCHIVES).md5 $(DIST_ARCHIVES).asc
+push: $(DIST_ARCHIVES) $(DIST_ARCHIVES).sha256 $(DIST_ARCHIVES).sha512 $(DIST_ARCHIVES).asc
 	@echo "Are you sure you want to tag and release $(DIST_ARCHIVES)? (y/n)"
 	@read confirm && [ $$confirm = 'y' ]
 	git tag rel-opendkim-`echo $(VERSION) | sed 's/\./-/g'`
 	git push --tags
-	scp $(DIST_ARCHIVES) $(DIST_ARCHIVES).sha1 $(DIST_ARCHIVES).md5 $(DIST_ARCHIVES).asc RELEASE_NOTES cm-msk,opendkim@frs.sourceforge.net:/home/frs/project/o/op/opendkim/
+	scp $(DIST_ARCHIVES) $(DIST_ARCHIVES).sha256 $(DIST_ARCHIVES).sha512 $(DIST_ARCHIVES).asc RELEASE_NOTES cm-msk,opendkim@frs.sourceforge.net:/home/frs/project/o/op/opendkim/
 
 dist-hook:
 	[ -f $(distdir)/libopendkim/dkim.h ] && rm -f $(distdir)/libopendkim/dkim.h

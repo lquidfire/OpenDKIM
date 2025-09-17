@@ -157,28 +157,38 @@ dkim_base32_encode(char *buf, size_t *buflen, const void *data, size_t size)
 }
 
 #ifdef TEST
-#include <openssl/sha.h>
-
+#include <openssl/evp.h>
 int
 main(int argc, char **argv)
 {
 	int x;
 	size_t buflen;
-	SHA_CTX sha;
+	EVP_MD_CTX *ctx;
 	char buf[128];
-	unsigned char shaout[SHA_DIGEST_LENGTH];
+	unsigned char hashout[EVP_MAX_MD_SIZE];
+	unsigned int hashlen;
 
 	memset(buf, '\0', sizeof buf);
 	buflen = sizeof buf;
 
-	SHA1_Init(&sha);
-	SHA1_Update(&sha, argv[1], strlen(argv[1]));
-	SHA1_Final(shaout, &sha);
+	ctx = EVP_MD_CTX_new();
+	if (ctx == NULL) {
+		fprintf(stderr, "EVP_MD_CTX_new() failed\n");
+		return 1;
+	}
 
-	x = dkim_base32_encode(buf, &buflen, shaout, SHA_DIGEST_LENGTH);
+	if (EVP_DigestInit_ex(ctx, EVP_sha256(), NULL) != 1 ||
+	    EVP_DigestUpdate(ctx, argv[1], strlen(argv[1])) != 1 ||
+	    EVP_DigestFinal_ex(ctx, hashout, &hashlen) != 1) {
+		fprintf(stderr, "EVP digest operations failed\n");
+		EVP_MD_CTX_free(ctx);
+		return 1;
+	}
 
+	EVP_MD_CTX_free(ctx);
+
+	x = dkim_base32_encode(buf, &buflen, hashout, hashlen);
 	printf("%s (%d)\n", buf, x);
-
 	return 0;
 }
 #endif /* TEST */

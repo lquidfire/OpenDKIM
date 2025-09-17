@@ -120,7 +120,7 @@ main(int argc, char **argv)
 	ssize_t rlen;
 	ssize_t wlen;
 	ssize_t l = (ssize_t) -1;
-	dkim_alg_t sa = DKIM_SIGN_RSASHA1;
+	dkim_alg_t sa = DKIM_SIGN_RSASHA256;
 	dkim_canon_t bc = DKIM_CANON_SIMPLE;
 	dkim_canon_t hc = DKIM_CANON_RELAXED;
 	DKIM_LIB *lib;
