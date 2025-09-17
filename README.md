@@ -67,6 +67,7 @@ In order to build OpenDKIM, you will need:
 * Native implementations of `strlcat()` and `strlcpy()`,
   [libbsd](https://libbsd.freedesktop.org/), or some other library that
   provides them.
+* [libidn2](https://gitlab.com/libidn/libidn2) for UTF-8 support.
 
 If you are building the filter, you will also need:
 
