@@ -506,11 +506,17 @@ struct msgctx
 #endif /* _FFR_STATSEXT */
 	struct lua_global * mctx_luaglobalh;	/* Lua global list */
 	struct lua_global * mctx_luaglobalt;	/* Lua global list */
+
+/* General EVP context */
+#ifndef USE_GNUTLS
+	EVP_MD_CTX	*mctx_evp_ctx;		/* General EVP context */
+#endif /* USE_GNUTLS */
+
 #ifdef _FFR_REPUTATION
 # ifdef USE_GNUTLS
-	gnutls_hash_hd_t mctx_hash;			/* hash, for dup detection */
+	gnutls_hash_hd_t mctx_hash;		/* hash, for dup detection */
 # else /* USE_GNUTLS */
-	EVP_MD_CTX	*mctx_hash;		/* hash, for dup detection */
+	EVP_MD_CTX	*mctx_hash;		/* EVP context for reputation */
 # endif /* USE_GNUTLS */
 #endif /* _FFR_REPUTATION */
 	unsigned char	mctx_envfrom[MAXADDRESS + 1];
@@ -9123,6 +9129,18 @@ dkimf_initcontext(struct dkimf_config *conf)
 # endif /* USE_GNUTLS */
 #endif /* _FFR_REPUTATION */
 
+/* Initialize general EVP context (always available) */
+#ifndef USE_GNUTLS
+	ctx->mctx_evp_ctx = EVP_MD_CTX_new();
+	if (ctx->mctx_evp_ctx != NULL)
+	{
+		if (EVP_DigestInit_ex(ctx->mctx_evp_ctx, EVP_sha256(), NULL) != 1)
+		{
+			EVP_MD_CTX_free(ctx->mctx_evp_ctx);
+			ctx->mctx_evp_ctx = NULL;
+		}
+	}
+#endif /* USE_GNUTLS */
 	return ctx;
 }
 
@@ -14377,7 +14395,7 @@ mlfi_eom(SMFICTX *ctx)
 				unsigned char digest[EVP_MAX_MD_SIZE];
 				char errbuf[BUFRSZ + 1];
 
-## ifdef USE_GNUTLS
+# ifdef USE_GNUTLS
 				(void) gnutls_hash_deinit(dfc->mctx_hash, digest);
 # else /* USE_GNUTLS */
 				if (dfc->mctx_hash != NULL)
