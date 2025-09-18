@@ -44,25 +44,11 @@ int
 dkim_base64_decode(u_char *str, u_char *buf, size_t buflen)
 {
 	int retval = -2;
-	size_t len;
 	BIO *bmem;
 	BIO *b64;
 
 	assert(str != NULL);
 	assert(buf != NULL);
-
-	/* check input format - must be multiple of 4 characters */
-	len = strlen((const char *) str);
-	if (len % 4 > 0)
-	{
-		return -1;
-	}
-
-	/* rough check for buffer space (base64 expands by ~4/3) */
-	if (len / 4 * 3 > buflen)
-	{
-		return -2;
-	}
 
 	/* create memory BIO from input string */
 	bmem = BIO_new_mem_buf(str, -1);
@@ -84,8 +70,12 @@ dkim_base64_decode(u_char *str, u_char *buf, size_t buflen)
 	/* decode the data */
 	retval = BIO_read(b64, buf, buflen);
 
-	error:
-	BIO_free_all(b64);
+	/* OpenSSL returns -1 on error, convert to our error codes */
+	if (retval < 0)
+		retval = -1;  /* corrupt input */
+
+		error:
+		BIO_free_all(b64);
 	return retval;
 }
 
