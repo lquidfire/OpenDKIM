@@ -3,6 +3,25 @@
 This listing shows the versions of the OpenDKIM package, the date of
 release, and a summary of the changes in that release.
 
+3.0.0-beta1	2025/09/18
+	Major Changes (Breaking)
+		Removed SHA1 support entirely - SHA256 is now required.
+		Modernized to OpenSSL 3.0 EVP API - Eliminates deprecation warnings.
+		ATPS updated to SHA256-only - No more SHA1 fallback.
+		Minimum OpenSSL version increased - Requires version with guaranteed SHA256.
+		Ed25519 now fully supported, also in testing.
+
+	Beta Release Warning
+		This is a beta release with significant cryptographic changes.
+		Test thoroughly before deploying to production mail servers.
+
+	Migration Notes
+		Review configurations that may have explicitly used SHA1.
+		Ensure OpenSSL version meets new requirements.
+		ATPS zones may need regeneration with SHA256 hashes.
+
+## Known Issues
+- Some OpenSSL deprecation warnings remain (will be fixed in future betas)
 2.11.0		2018/11/??
 	Add support for ED25519 keys.  GNUTLS support provided by
 		Dilyan Palauzov.

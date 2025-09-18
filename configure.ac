@@ -13,8 +13,8 @@ AC_PREREQ([2.71])
 #
 # Package version
 #
-m4_define([VERSION_RELEASE], 2)
-m4_define([VERSION_MAJOR_REV], 11)
+m4_define([VERSION_RELEASE], 3)
+m4_define([VERSION_MAJOR_REV], 0)
 m4_define([VERSION_MINOR_REV], 0)
 m4_define([VERSION_PATCH], 0)
 
@@ -23,14 +23,14 @@ m4_define([VERSION_PATCH], 0)
 # 	- bump "current" and reset "revision" with API changes
 # 	- bump "revision" with internal source code changes
 #
-m4_define([LIBVERSION_CURRENT], 11)
+m4_define([LIBVERSION_CURRENT], 12)
 m4_define([LIBVERSION_REVISION], 0)
 m4_define([LIBVERSION_AGE], 0)
 
 #
 # Autotools setup
 #
-AC_INIT([OpenDKIM],[VERSION_RELEASE.VERSION_MAJOR_REV.VERSION_MINOR_REV],[bugs@opendkim.org])
+AC_INIT([OpenDKIM],[VERSION_RELEASE.VERSION_MAJOR_REV.VERSION_MINOR_REV]-beta1,[https://github.com/lquidfire/opendkim/issues])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE(
