@@ -144,19 +144,10 @@ main(int argc, char **argv)
 	DKIMF_DB db;
 #ifdef USE_GNUTLS
 	gnutls_hash_hd_t sha;
-#else /* USE_GNUTLS */
-	SHA_CTX sha;
-# ifdef HAVE_SHA256
-	SHA256_CTX sha256;
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 	char domain[DKIM_MAXHOSTNAMELEN + 1];
 	char hostname[DKIM_MAXHOSTNAMELEN + 1];
-#ifdef HAVE_SHA256
 	char shaout[SHA256_DIGEST_LENGTH];
-#else /* HAVE_SHA256 */
-	char shaout[SHA_DIGEST_LENGTH];
-#endif /* HAVE_SHA256 */
 	char base32[BASE32_LENGTH + 1];
 	char value[BUFRSZ + 1];
 
@@ -185,15 +176,13 @@ main(int argc, char **argv)
 			break;
 
 		  case 'h':
-			if (strcasecmp(optarg, "sha1") != 0 &&
-			    strcasecmp(optarg, "sha256") != 0 &&
+			if (strcasecmp(optarg, "sha256") != 0 &&
 			    strcasecmp(optarg, "none") != 0)
 			{
 				fprintf(stderr, "%s: invalid hash algorithm\n",
 				        progname);
 				return EX_USAGE;
 			}
-#ifndef HAVE_SHA256
 			else if (strcasecmp(optarg, "sha256") == 0)
 			{
 				fprintf(stderr,
@@ -201,12 +190,8 @@ main(int argc, char **argv)
 				        progname, optarg);
 				return EX_SOFTWARE;
 			}
-#endif /* ! HAVE_SHA256 */
 			hash = optarg;
-			if (strcasecmp(hash, "sha1") == 0)
-				shalen = SHA_DIGEST_LENGTH;
-			else
-				shalen = SHA256_DIGEST_LENGTH;
+			shalen = SHA256_DIGEST_LENGTH;
 			break;
 
 		  case 'N':
@@ -422,42 +407,42 @@ main(int argc, char **argv)
 
 		if (hash == NULL || strcasecmp(hash, "none") != 0)
 		{
-			/* compute SHA1 hash */
+			/* compute hash */
 #ifdef USE_GNUTLS
-# ifdef HAVE_SHA256
 			if (hash == NULL || strcasecmp(hash, "sha256") == 0)
 			{
 				(void) gnutls_hash_init(&sha,
 				                        GNUTLS_DIG_SHA256);
 			}
-			else
-			{
-				(void) gnutls_hash_init(&sha, GNUTLS_DIG_SHA1);
-			}
-# else /* HAVE_SHA256 */
-			(void) gnutls_hash_init(&sha, GNUTLS_DIG_SHA1);
-# endif /* HAVE_SHA256 */
+
 			(void) gnutls_hash(sha, domain, strlen(domain));
 			(void) gnutls_hash_deinit(sha, shaout);
 #else /* USE_GNUTLS */
-# ifdef HAVE_SHA256
-			if (hash == NULL || strcasecmp(hash, "sha256") == 0)
-			{
-				SHA256_Init(&sha256);
-				SHA256_Update(&sha256, domain, strlen(domain));
-				SHA256_Final(shaout, &sha256);
-			}
-			else
-			{
-				SHA1_Init(&sha);
-				SHA1_Update(&sha, domain, strlen(domain));
-				SHA1_Final(shaout, &sha);
-			}
-# else /* HAVE_SHA256 */
-			SHA1_Init(&sha);
-			SHA1_Update(&sha, domain, strlen(domain));
-			SHA1_Final(shaout, &sha);
-# endif /* HAVE_SHA256 */
+#else /* USE_GNUTLS */
+	if (hash == NULL || strcasecmp(hash, "sha256") == 0)
+	{
+		EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
+		unsigned int digest_len;
+
+		if (md_ctx == NULL)
+		{
+		fprintf(stderr, "%s: EVP_MD_CTX_new() failed\n", progname);
+		(void) dkimf_db_close(db);
+		return 1;
+		}
+
+		if (EVP_DigestInit_ex(md_ctx, EVP_sha256(), NULL) != 1 ||
+		EVP_DigestUpdate(md_ctx, domain, strlen(domain)) != 1 ||
+		EVP_DigestFinal_ex(md_ctx, shaout, &digest_len) != 1)
+		{
+		fprintf(stderr, "%s: EVP digest operation failed\n", progname);
+		EVP_MD_CTX_free(md_ctx);
+		(void) dkimf_db_close(db);
+		return 1;
+		}
+
+		EVP_MD_CTX_free(md_ctx);
+	}
 #endif /* USE_GNUTLS */
 
 			/* encode with base32 */
