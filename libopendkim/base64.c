@@ -1,199 +1,149 @@
 /*
-**  Copyright (c) 2005, 2008 Sendmail, Inc. and its suppliers.
-**    All rights reserved.
-**
-**  Copyright (c) 2009, 2012, The Trusted Domain Project.  All rights reserved.
-*/
+ **  Copyright (c) 2005, 2008 Sendmail, Inc. and its suppliers.
+ **    All rights reserved.
+ **
+ **  Copyright (c) 2009, 2012, The Trusted Domain Project.  All rights reserved.
+ **
+ **  Copyright 2025 OpenDKIM contributors.
+ **
+ **  Changelog:
+ **    202509: Use OpenSSL BIO functions instead of custom base64 code.
+ */
 
 /* system includes */
 #include <sys/types.h>
 #include <assert.h>
+#include <string.h>
+
+/* OpenSSL includes */
+#include <openssl/bio.h>
+#include <openssl/evp.h>
 
 /* libopendkim includes */
 #include "base64.h"
-
-/* base64 alphabet */
-static unsigned char alphabet[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-/* base64 decode stuff */
-static int decoder[256] =
-{
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 62, 0, 0, 0, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0,
-	0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
-	14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 0,
-	0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
 
 #ifndef NULL
 # define NULL	0
 #endif /* ! NULL */
 
 /*
-**  DKIM_BASE64_DECODE -- decode a base64 blob
-**
-**  Parameters:
-**  	str -- string to decide
-**  	buf -- where to write it
-**  	buflen -- bytes available at "buf"
-**
-**  Return value:
-**  	>= 0 -- success; length of what was decoded is returned
-**  	-1 -- corrupt
-**  	-2 -- not enough space at "buf"
-*/
+ **  DKIM_BASE64_DECODE -- decode a base64 blob
+ **
+ **  Parameters:
+ **  	str -- string to decode
+ **  	buf -- where to write it
+ **  	buflen -- bytes available at "buf"
+ **
+ **  Return value:
+ **  	>= 0 -- success; length of what was decoded is returned
+ **  	-1 -- corrupt input
+ **  	-2 -- not enough space at "buf" or internal error
+ */
 
 int
 dkim_base64_decode(u_char *str, u_char *buf, size_t buflen)
 {
-	int n = 0;
-	int bits = 0;
-	int char_count = 0;
-	u_char *c;
+	int retval = -2;
+	size_t len;
+	BIO *bmem;
+	BIO *b64;
 
 	assert(str != NULL);
 	assert(buf != NULL);
 
-	for (c = str; *c != '=' && *c != '\0'; c++)
+	/* check input format - must be multiple of 4 characters */
+	len = strlen((const char *) str);
+	if (len % 4 > 0)
 	{
-		/* end padding */
-		if (*c == '=' || *c == '\0')
-			break;
-
-		/* skip stuff not part of the base64 alphabet (RFC2045) */
-		if (!((*c >= 'A' && *c <= 'Z') ||
-		      (*c >= 'a' && *c <= 'z') ||
-		      (*c >= '0' && *c <= '9') ||
-		      (*c == '+') ||
-		      (*c == '/')))
-			continue;
-
-		/* everything else gets decoded */
-		bits += decoder[(int) *c];
-		char_count++;
-		if (n + 3 > buflen)
-			return -2;
-		if (char_count == 4)
-		{
-			buf[n++] = (bits >> 16);
-			buf[n++] = ((bits >> 8) & 0xff);
-			buf[n++] = (bits & 0xff);
-			bits = 0;
-			char_count = 0;
-		}
-		else
-		{
-			bits <<= 6;
-		}
-	}
-
-	/* XXX -- don't bother checking for proper termination (for now) */
-
-	/* process trailing data, if any */
-	switch (char_count)
-	{
-	  case 0:
-		break;
-
-	  case 1:
-		/* base64 decoding incomplete; at least two bits missing */
 		return -1;
-
-	  case 2:
-		if (n + 1 > buflen)
-			return -2;
-		buf[n++] = (bits >> 10);
-		break;
-
-	  case 3:
-		if (n + 2 > buflen)
-			return -2;
-		buf[n++] = (bits >> 16);
-		buf[n++] = ((bits >> 8) & 0xff);
-		break;
 	}
 
-	return n;
+	/* rough check for buffer space (base64 expands by ~4/3) */
+	if (len / 4 * 3 > buflen)
+	{
+		return -2;
+	}
+
+	/* create memory BIO from input string */
+	bmem = BIO_new_mem_buf(str, -1);
+	if (bmem == NULL)
+	{
+		return retval;
+	}
+
+	/* create base64 decoder and chain it to memory BIO */
+	b64 = BIO_push(BIO_new(BIO_f_base64()), bmem);
+	if (b64 == bmem)
+	{
+		goto error;
+	}
+
+	/* configure base64 decoder to handle data without newlines */
+	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+
+	/* decode the data */
+	retval = BIO_read(b64, buf, buflen);
+
+	error:
+	BIO_free_all(b64);
+	return retval;
 }
 
 /*
-**  DKIM_BASE64_ENCODE -- encode base64 data
-**
-**  Parameters:
-**  	data -- data to encode
-**  	datalen -- bytes at "data" to encode
-**  	buf -- where to write the encoding
-**  	buflen -- bytes available at "buf"
-**
-**  Return value:
-**  	>= 0 -- success; number of bytes written to "buf" returned
-**   	-1 -- failure (not enough space at "buf")
-*/
+ **  DKIM_BASE64_ENCODE -- encode base64 data
+ **
+ **  Parameters:
+ **  	data -- data to encode
+ **  	datalen -- bytes at "data" to encode
+ **  	buf -- where to write the encoding
+ **  	buflen -- bytes available at "buf"
+ **
+ **  Return value:
+ **  	>= 0 -- success; number of bytes written to "buf" returned
+ **   	-1 -- failure (not enough space at "buf" or internal error)
+ */
 
 int
 dkim_base64_encode(u_char *data, size_t datalen, u_char *buf, size_t buflen)
 {
-	int bits;
-	int c;
-	int char_count;
-	size_t n;
+	int retval = -1;
+	BIO *bmem;
+	BIO *b64;
 
 	assert(data != NULL);
 	assert(buf != NULL);
 
-	bits = 0;
-	char_count = 0;
-	n = 0;
-
-	for (c = 0; c < datalen; c++)
+	/* create memory BIO for output */
+	bmem = BIO_new(BIO_s_mem());
+	if (bmem == NULL)
 	{
-		bits += data[c];
-		char_count++;
-		if (char_count == 3)
-		{
-			if (n + 4 > buflen)
-				return -1;
-
-			buf[n++] = alphabet[bits >> 18];
-			buf[n++] = alphabet[(bits >> 12) & 0x3f];
-			buf[n++] = alphabet[(bits >> 6) & 0x3f];
-			buf[n++] = alphabet[bits & 0x3f];
-			bits = 0;
-			char_count = 0;
-		}
-		else
-		{
-			bits <<= 8;
-		}
+		return retval;
 	}
 
-	if (char_count != 0)
+	/* create base64 encoder and chain it to memory BIO */
+	b64 = BIO_push(BIO_new(BIO_f_base64()), bmem);
+	if (b64 == bmem)
 	{
-		if (n + 4 > buflen)
-			return -1;
-
-		bits <<= 16 - (8 * char_count);
-		buf[n++] = alphabet[bits >> 18];
-		buf[n++] = alphabet[(bits >> 12) & 0x3f];
-		if (char_count == 1)
-		{
-			buf[n++] = '=';
-			buf[n++] = '=';
-		}
-		else
-		{
-			buf[n++] = alphabet[(bits >> 6) & 0x3f];
-			buf[n++] = '=';
-		}
+		goto error;
 	}
 
-	return n;
+	/* configure base64 encoder to generate data without newlines */
+	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+
+	/* encode the data */
+	BIO_write(b64, data, datalen);
+	BIO_flush(b64);
+
+	/* read the encoded result */
+	retval = BIO_read(bmem, buf, buflen);
+
+	/* check if we read everything (no truncation) */
+	if (retval > 0 && BIO_eof(bmem) != 1)
+	{
+		retval = -1;
+	}
+
+	error:
+	BIO_free_all(b64);
+	return retval;
 }
