@@ -16,7 +16,7 @@ ExecReload=/bin/kill -USR1 $MAINPID
 Restart=on-abnormal
 User=opendkim
 Group=opendkim
-PermissionsStartOnly
+PermissionsStartOnly=True
 
 [Install]
 WantedBy=multi-user.target
