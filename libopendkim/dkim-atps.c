@@ -1,6 +1,8 @@
 /*
 **  Copyright (c) 2010-2012, 2015, The Trusted Domain Project.
 **  	All rights reserved.
+**
+**  Copyright 2025 OpenDKIM Contributors.
 */
 
 #include "build-config.h"
@@ -28,15 +30,9 @@
 /* GnuTLS includes */
 # include <gnutls/gnutls.h>
 # include <gnutls/crypto.h>
-# ifndef SHA_DIGEST_LENGTH
-#  define SHA_DIGEST_LENGTH 20
-# endif /* ! SHA_DIGEST_LENGTH */
-# ifndef SHA256_DIGEST_LENGTH
-#  define SHA256_DIGEST_LENGTH 32
-# endif /* ! SHA256_DIGEST_LENGTH */
 #else /* USE_GNUTLS */
 /* openssl includes */
-# include <openssl/sha.h>
+# include <openssl/evp.h>
 #endif /* USE_GNUTLS */
 
 /* prototypes */
@@ -59,11 +55,6 @@ extern void dkim_error __P((DKIM *, const char *, ...));
 #define	DKIM_ATPS_QUERYLENGTH	64
 #define	DKIM_ATPS_VALID		"v=ATPS1"
 
-#ifdef SHA256_DIGEST_LENGTH
-# define MAXDIGEST		MAX(SHA_DIGEST_LENGTH, SHA256_DIGEST_LENGTH)
-#else /* SHA256_DIGEST_LENGTH */
-# define MAXDIGEST		SHA_DIGEST_LENGTH
-#endif /* SHA256_DIGEST_LENGTH */
 
 /*
 **  DKIM_ATPS_CHECK -- check for Authorized Third Party Signing
@@ -115,9 +106,7 @@ dkim_atps_check(DKIM *dkim, DKIM_SIGINFO *sig, struct timeval *timeout,
 	gnutls_hash_hd_t ctx;
 #else /* USE_GNUTLS */
         SHA_CTX ctx;
-# ifdef HAVE_SHA256
 	SHA256_CTX ctx2;
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 	struct timeval to;
 	HEADER hdr;
@@ -153,12 +142,6 @@ dkim_atps_check(DKIM *dkim, DKIM_SIGINFO *sig, struct timeval *timeout,
 
 	switch (hash)
 	{
-#  ifdef HAVE_SHA1
-	  case DKIM_HASHTYPE_SHA1:
-		diglen = SHA_DIGEST_LENGTH;
-		break;
-#  endif /* HAVE_SHA1 */
-
 	  case DKIM_HASHTYPE_SHA256:
 		diglen = SHA256_DIGEST_LENGTH;
 		break;
@@ -177,12 +160,6 @@ dkim_atps_check(DKIM *dkim, DKIM_SIGINFO *sig, struct timeval *timeout,
 # ifdef USE_GNUTLS
 		switch (hash)
 		{
-#  ifdef HAVE_SHA1
-		  case DKIM_HASHTYPE_SHA1:
-			ghash = GNUTLS_DIG_SHA1;
-			break;
-#  endif /* HAVE_SHA1 */
-
 		  case DKIM_HASHTYPE_SHA256:
 			ghash = GNUTLS_DIG_SHA256;
 			break;
@@ -197,26 +174,39 @@ dkim_atps_check(DKIM *dkim, DKIM_SIGINFO *sig, struct timeval *timeout,
 			return DKIM_STAT_INTERNAL;
 		gnutls_hash_deinit(ctx, digest);
 # else /* USE_GNUTLS */
-		switch (hash)
-		{
-#  ifdef HAVE_SHA1
-		  case DKIM_HASHTYPE_SHA1:
-			SHA1_Init(&ctx);
-			SHA1_Update(&ctx, sdomain, strlen(sdomain));
-			SHA1_Final(digest, &ctx);
-			break;
-#  endif /* HAVE_SHA1 */
+            {
+                EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
+                const EVP_MD *md_type;
+                unsigned int digest_len;
 
-		  case DKIM_HASHTYPE_SHA256:
-			SHA256_Init(&ctx2);
-			SHA256_Update(&ctx2, sdomain, strlen(sdomain));
-			SHA256_Final(digest, &ctx2);
-			break;
+                if (md_ctx == NULL)
+                {
+                    /* handle allocation failure */
+                    return DKIM_STAT_INTERNAL;
+                }
 
-		  default:
-			assert(0);
-			break;
-		}
+                switch (hash)
+                {
+                  case DKIM_HASHTYPE_SHA256:
+                        md_type = EVP_sha256();
+                        break;
+
+                  default:
+                        EVP_MD_CTX_free(md_ctx);
+                        assert(0);
+                        return DKIM_STAT_INTERNAL;
+                }
+
+                if (EVP_DigestInit_ex(md_ctx, md_type, NULL) != 1 ||
+                    EVP_DigestUpdate(md_ctx, sdomain, strlen(sdomain)) != 1 ||
+                    EVP_DigestFinal_ex(md_ctx, digest, &digest_len) != 1)
+                {
+                    EVP_MD_CTX_free(md_ctx);
+                    return DKIM_STAT_INTERNAL;
+                }
+
+                EVP_MD_CTX_free(md_ctx);
+            }
 # endif /* USE_GNUTLS */
 
 		/* base32-encode the hash */

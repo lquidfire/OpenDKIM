@@ -15,6 +15,7 @@ t-cleanup
 t-setup
 .deps/
 .libs/
+contrib/ArchLinux-PKGBUILD/
 autom4te.cache/
 autoscan-*.log
 build-config.h.in
