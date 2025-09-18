@@ -59,13 +59,9 @@
 # include <gnutls/gnutls.h>
 # include <gnutls/crypto.h>
 #else /* USE_GNUTLS */
-# include <openssl/sha.h>
+# include <openssl/evp.h>
 # include <openssl/err.h>
 #endif /* USE_GNUTLS */
-
-#ifndef SHA_DIGEST_LENGTH
-# define SHA_DIGEST_LENGTH 20
-#endif /* ! SHA_DIGEST_LENGTH */
 
 #ifdef HAVE_PATHS_H
 # include <paths.h>
@@ -514,7 +510,7 @@ struct msgctx
 # ifdef USE_GNUTLS
 	gnutls_hash_hd_t mctx_hash;			/* hash, for dup detection */
 # else /* USE_GNUTLS */
-	SHA_CTX		mctx_hash;		/* hash, for dup detection */
+	EVP_MD_CTX	*mctx_hash;		/* hash, for dup detection */
 # endif /* USE_GNUTLS */
 #endif /* _FFR_REPUTATION */
 	unsigned char	mctx_envfrom[MAXADDRESS + 1];
@@ -637,9 +633,7 @@ struct lookup dkimf_sign[] =
 
 struct lookup dkimf_atpshash[] =
 {
-#ifdef HAVE_SHA256
 	{ "sha256",		1 },
-#endif /* HAVE_SHA256 */
 	{ "none",		1 },
 	{ NULL,			-1 },
 };
@@ -9115,9 +9109,17 @@ dkimf_initcontext(struct dkimf_config *conf)
 #endif /* _FFR_ATPS */
 #ifdef _FFR_REPUTATION
 # ifdef USE_GNUTLS
-	(void) gnutls_hash_init(&ctx->mctx_hash, GNUTLS_DIG_SHA1);
- else /* USE_GNUTLS */
-	SHA1_Init(&ctx->mctx_hash);
+	(void) gnutls_hash_init(&ctx->mctx_hash, GNUTLS_DIG_SHA256);
+# else /* USE_GNUTLS */
+	ctx->mctx_hash = EVP_MD_CTX_new();
+	if (ctx->mctx_hash != NULL)
+	{
+		if (EVP_DigestInit_ex(ctx->mctx_hash, EVP_sha256(), NULL) != 1)
+		{
+			EVP_MD_CTX_free(ctx->mctx_hash);
+			ctx->mctx_hash = NULL;
+		}
+	}
 # endif /* USE_GNUTLS */
 #endif /* _FFR_REPUTATION */
 
@@ -9271,6 +9273,12 @@ dkimf_cleanup(SMFICTX *ctx)
 
 		if (dfc->mctx_tmpstr != NULL)
 			dkimf_dstring_free(dfc->mctx_tmpstr);
+#ifdef _FFR_REPUTATION
+# ifndef USE_GNUTLS
+	if (ctx->mctx_hash != NULL)
+		EVP_MD_CTX_free(ctx->mctx_hash);
+# endif /* USE_GNUTLS */
+#endif /* _FFR_REPUTATION */
 
 #ifdef _FFR_STATSEXT
 		if (dfc->mctx_statsext != NULL)
@@ -11507,8 +11515,11 @@ mlfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 	(void) gnutls_hash(dfc->mctx_hash, headerf, strlen(headerf));
 	(void) gnutls_hash(dfc->mctx_hash, headerv, strlen(headerv));
 # else /* USE_GNUTLS */
-	SHA1_Update(&dfc->mctx_hash, headerf, strlen(headerf));
-	SHA1_Update(&dfc->mctx_hash, headerv, strlen(headerv));
+	if (dfc->mctx_hash != NULL)
+	{
+		(void) EVP_DigestUpdate(dfc->mctx_hash, headerf, strlen(headerf));
+		(void) EVP_DigestUpdate(dfc->mctx_hash, headerv, strlen(headerv));
+	}
 # endif /* USE_GNUTLS */
 #endif /* _FFR_REPUTATION */
 
@@ -13348,7 +13359,8 @@ mlfi_body(SMFICTX *ctx, u_char *bodyp, size_t bodylen)
 # ifdef USE_GNUTLS
 	(void) gnutls_hash(dfc->mctx_hash, bodyp, bodylen);
 # else /* USE_GNUTLS */
-	SHA1_Update(&dfc->mctx_hash, bodyp, bodylen);
+	if (dfc->mctx_hash != NULL)
+		(void) EVP_DigestUpdate(dfc->mctx_hash, bodyp, bodylen);
 # endif /* USE_GNUTLS */
 #endif /* _FFR_REPUTATION */
 
@@ -14362,13 +14374,28 @@ mlfi_eom(SMFICTX *ctx)
 				_Bool checked = FALSE;
 				const char *cd;
 				const char *domain = NULL;
-				unsigned char digest[SHA_DIGEST_LENGTH];
+				unsigned char digest[EVP_MAX_MD_SIZE];
 				char errbuf[BUFRSZ + 1];
 
-# ifdef USE_GNUTLS
+## ifdef USE_GNUTLS
 				(void) gnutls_hash_deinit(dfc->mctx_hash, digest);
 # else /* USE_GNUTLS */
-				SHA1_Final(digest, &dfc->mctx_hash);
+				if (dfc->mctx_hash != NULL)
+				{
+					unsigned int digest_len;
+					if (EVP_DigestFinal_ex(dfc->mctx_hash, digest, &digest_len) != 1)
+					{
+						/* Handle error - and log it */
+						if (conf->conf_dolog)
+						syslog(LOG_WARNING, "%s: EVP_DigestFinal_ex() failed", dfc->mctx_jobid);
+						memset(digest, 0, EVP_MAX_MD_SIZE);
+						digest_len = 0;  // Also set length to 0 on error
+					}
+				}
+				else
+				{
+					memset(digest, 0, EVP_MAX_MD_SIZE);
+				}
 # endif /* USE_GNUTLS */
 
 				for (c = 0; c < nsigs; c++)
@@ -14386,7 +14413,7 @@ mlfi_eom(SMFICTX *ctx)
 					                         sigs[c],
 					                         dfc->mctx_spam,
 					                         digest,
-					                         SHA_DIGEST_LENGTH,
+					                         digest_len,  // Use the actual length
 					                         &limit,
 					                         &ratio,
 					                         &count,
@@ -14442,7 +14469,7 @@ mlfi_eom(SMFICTX *ctx)
 					                         NULL,
 					                         dfc->mctx_spam,
 					                         digest,
-					                         SHA_DIGEST_LENGTH,
+					                         digest_len,  // Use the actual length
 					                         &limit,
 					                         &ratio,
 					                         &count,
