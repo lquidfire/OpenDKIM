@@ -153,15 +153,15 @@ dkim_atps_check(DKIM *dkim, DKIM_SIGINFO *sig, struct timeval *timeout,
 
 	switch (hash)
 	{
+#  ifdef HAVE_SHA1
 	  case DKIM_HASHTYPE_SHA1:
 		diglen = SHA_DIGEST_LENGTH;
 		break;
+#  endif /* HAVE_SHA1 */
 
-#  ifdef HAVE_SHA256
 	  case DKIM_HASHTYPE_SHA256:
 		diglen = SHA256_DIGEST_LENGTH;
 		break;
-#  endif /* HAVE_SHA256 */
 
 	  case DKIM_HASHTYPE_UNKNOWN:
 		break;
@@ -177,9 +177,11 @@ dkim_atps_check(DKIM *dkim, DKIM_SIGINFO *sig, struct timeval *timeout,
 # ifdef USE_GNUTLS
 		switch (hash)
 		{
+#  ifdef HAVE_SHA1
 		  case DKIM_HASHTYPE_SHA1:
 			ghash = GNUTLS_DIG_SHA1;
 			break;
+#  endif /* HAVE_SHA1 */
 
 		  case DKIM_HASHTYPE_SHA256:
 			ghash = GNUTLS_DIG_SHA256;
@@ -197,19 +199,19 @@ dkim_atps_check(DKIM *dkim, DKIM_SIGINFO *sig, struct timeval *timeout,
 # else /* USE_GNUTLS */
 		switch (hash)
 		{
+#  ifdef HAVE_SHA1
 		  case DKIM_HASHTYPE_SHA1:
 			SHA1_Init(&ctx);
 			SHA1_Update(&ctx, sdomain, strlen(sdomain));
 			SHA1_Final(digest, &ctx);
 			break;
+#  endif /* HAVE_SHA1 */
 
-#  ifdef HAVE_SHA256
 		  case DKIM_HASHTYPE_SHA256:
 			SHA256_Init(&ctx2);
 			SHA256_Update(&ctx2, sdomain, strlen(sdomain));
 			SHA256_Final(digest, &ctx2);
 			break;
-#  endif /* HAVE_SHA256 */
 
 		  default:
 			assert(0);
@@ -281,7 +283,7 @@ dkim_atps_check(DKIM *dkim, DKIM_SIGINFO *sig, struct timeval *timeout,
 		/* copy it first */
 		(void) dn_expand((unsigned char *) &ansbuf, eom, cp,
 		                 (char *) query, sizeof query);
- 
+
 		if ((n = dn_skipname(cp, eom)) < 0)
 		{
 			dkim_error(dkim, "'%s' reply corrupt", query);
