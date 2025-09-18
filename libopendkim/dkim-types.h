@@ -37,6 +37,7 @@
 # include <openssl/bio.h>
 # include <openssl/err.h>
 # include <openssl/sha.h>
+# include <openssl/evp.h>
 #endif /* USE_GNUTLS */
 
 #ifdef QUERY_CACHE
@@ -161,16 +162,14 @@ struct dkim_sha
 	u_char *		sha_out;
 };
 #else /* USE_GNUTLS */
-# ifdef HAVE_SHA256
 /* struct dkim_sha256 -- stuff needed to do a sha256 hash */
 struct dkim_sha256
 {
 	int			sha256_tmpfd;
 	BIO *			sha256_tmpbio;
-	SHA256_CTX		sha256_ctx;
+	EVP_MD_CTX		*sha256_ctx;
 	u_char			sha256_out[EVP_MAX_MD_SIZE];
 };
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 
 /* struct dkim_canon -- a canonicalization status handle */

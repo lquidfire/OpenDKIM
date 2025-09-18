@@ -114,7 +114,6 @@ dkim_canon_free(DKIM *dkim, DKIM_CANON *canon)
 		  }
 
 #else /* USE_GNUTLS */
-# ifdef HAVE_SHA256
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_sha256 *sha256;
@@ -128,9 +127,12 @@ dkim_canon_free(DKIM *dkim, DKIM_CANON *canon)
 				sha256->sha256_tmpbio = NULL;
 			}
 
+			/* Add EVP context cleanup */
+			if (sha256->sha256_ctx != NULL)
+				EVP_MD_CTX_free(sha256->sha256_ctx);
+
 			break;
 		  }
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 
 		  default:
@@ -198,20 +200,19 @@ dkim_canon_write(DKIM_CANON *canon, u_char *buf, size_t buflen)
 		break;
 	  }
 #else /* USE_GNUTLS */
-# ifdef HAVE_SHA256
 	  case DKIM_HASHTYPE_SHA256:
 	  {
 		struct dkim_sha256 *sha256;
 
 		sha256 = (struct dkim_sha256 *) canon->canon_hash;
-		SHA256_Update(&sha256->sha256_ctx, buf, buflen);
+		/* Replace SHA256_Update with EVP_DigestUpdate */
+		EVP_DigestUpdate(sha256->sha256_ctx, buf, buflen);
 
 		if (sha256->sha256_tmpbio != NULL)
 			BIO_write(sha256->sha256_tmpbio, buf, buflen);
 
 		break;
 	  }
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 	}
 
@@ -659,7 +660,6 @@ dkim_canon_init(DKIM *dkim, _Bool tmp, _Bool keep)
 		  	break;
 		  }
 #else /* USE_GNUTLS */
-# ifdef HAVE_SHA256
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_sha256 *sha256;
@@ -675,13 +675,24 @@ dkim_canon_init(DKIM *dkim, _Bool tmp, _Bool keep)
 			}
 
 			memset(sha256, '\0', sizeof(struct dkim_sha256));
-			SHA256_Init(&sha256->sha256_ctx);
+
+			/* Replace SHA256_Init with EVP initialization */
+			sha256->sha256_ctx = EVP_MD_CTX_new();
+			if (sha256->sha256_ctx == NULL ||
+			    EVP_DigestInit_ex(sha256->sha256_ctx, EVP_sha256(), NULL) != 1)
+			{
+				if (sha256->sha256_ctx != NULL)
+					EVP_MD_CTX_free(sha256->sha256_ctx);
+				DKIM_FREE(dkim, sha256);
+				return DKIM_STAT_NORESOURCE;
+			}
 
 			if (tmp)
 			{
 				status = dkim_tmpfile(dkim, &fd, keep);
 				if (status != DKIM_STAT_OK)
 				{
+					EVP_MD_CTX_free(sha256->sha256_ctx);
 					DKIM_FREE(dkim, sha256);
 					return status;
 				}
@@ -691,10 +702,8 @@ dkim_canon_init(DKIM *dkim, _Bool tmp, _Bool keep)
 			}
 
 			cur->canon_hash = sha256;
-
-		  	break;
+			break;
 		  }
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 
 		  default:
@@ -1332,20 +1341,19 @@ dkim_canon_runheaders(DKIM *dkim)
 		  }
 
 #else /* USE_GNUTLS */
-# ifdef HAVE_SHA256
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_sha256 *sha256;
+			unsigned int len;
 
 			sha256 = (struct dkim_sha256 *) cur->canon_hash;
-			SHA256_Final(sha256->sha256_out, &sha256->sha256_ctx);
+			EVP_DigestFinal_ex(sha256->sha256_ctx, sha256->sha256_out, &len);
 
 			if (sha256->sha256_tmpbio != NULL)
 				(void) BIO_flush(sha256->sha256_tmpbio);
 
 			break;
 		  }
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 
 		  default:
@@ -1453,20 +1461,19 @@ dkim_canon_signature(DKIM *dkim, struct dkim_header *hdr)
 			break;
 		  }
 #else /* USE_GNUTLS */
-# ifdef HAVE_SHA256
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_sha256 *sha256;
+			unsigned int len;
 
 			sha256 = (struct dkim_sha256 *) cur->canon_hash;
-			SHA256_Final(sha256->sha256_out, &sha256->sha256_ctx);
+			EVP_DigestFinal_ex(sha256->sha256_ctx, sha256->sha256_out, &len);
 
 			if (sha256->sha256_tmpbio != NULL)
 				(void) BIO_flush(sha256->sha256_tmpbio);
 
 			break;
 		  }
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 
 		  default:
@@ -1871,20 +1878,19 @@ dkim_canon_closebody(DKIM *dkim)
 			break;
 		  }
 #else /* USE_GNUTLS */
-# ifdef HAVE_SHA256
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_sha256 *sha256;
+			unsigned int len;
 
 			sha256 = (struct dkim_sha256 *) cur->canon_hash;
-			SHA256_Final(sha256->sha256_out, &sha256->sha256_ctx);
+			EVP_DigestFinal_ex(sha256->sha256_ctx, sha256->sha256_out, &len);
 
 			if (sha256->sha256_tmpbio != NULL)
 				(void) BIO_flush(sha256->sha256_tmpbio);
 
 			break;
 		  }
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 
 		  default:
@@ -1934,7 +1940,6 @@ dkim_canon_getfinal(DKIM_CANON *canon, u_char **digest, size_t *dlen)
 		return DKIM_STAT_OK;
 	  }
 #else /* USE_GNUTLS */
-# ifdef HAVE_SHA256
 	  case DKIM_HASHTYPE_SHA256:
 	  {
 		struct dkim_sha256 *sha256;
@@ -1945,7 +1950,6 @@ dkim_canon_getfinal(DKIM_CANON *canon, u_char **digest, size_t *dlen)
 
 		return DKIM_STAT_OK;
 	  }
-# endif /* HAVE_SHA256 */
 #endif /* USE_GNUTLS */
 
 	  default:
