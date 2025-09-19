@@ -1244,6 +1244,7 @@ dkimf_xs_signfor(lua_State *l)
 		lua_pushnumber(l, status);
 		return 1;
 	}
+	return -1;
 }
 
 /*

@@ -27,6 +27,11 @@
 # include <strl.h>
 #endif /* USE_STRL_H */
 
+/* libbsd if found */
+#ifdef USE_BSD_H
+# include <bsd/string.h>
+#endif /* USE_BSD_H */
+
 /* data types */
 struct reprrd_handle
 {
