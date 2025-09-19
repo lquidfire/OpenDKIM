@@ -24,7 +24,15 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
+PrivateDevices=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictRealtime=true
 
 # Restart behavior
 Restart=on-failure
