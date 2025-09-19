@@ -4,29 +4,13 @@
 ## Copyright (c) 2010-2015, 2018, The Trusted Domain Project.
 ##   All rights reserved.
 ##
+## Copyright 2025 OpenDKIM contributors.
+##
 
 ##
 ## For settings that refer to a "dataset", see the opendkim(8) man page.
 ##
 
-## DEPRECATED CONFIGURATION OPTIONS
-## 
-## The following configuration options are no longer valid.  They should be
-## removed from your existing configuration file to prevent potential issues.
-## Failure to do so may result in opendkim being unable to start.
-## 
-## Removed in 2.10.0:
-##   AddAllSignatureResults
-##   ADSPAction
-##   ADSPNoSuchDomain
-##   BogusPolicy
-##   DisableADSP
-##   LDAPSoftStart
-##   LocalADSP
-##   NoDiscardableMailTo
-##   On-PolicyError
-##   SendADSPReports
-##   UnprotectedPolicy
 
 ## CONFIGURATION OPTIONS
 
@@ -231,7 +215,7 @@ Domain			example.com
 ##  SigningTable and KeyTable are used.  No default; must be specified for 
 ##  signing if SigningTable/KeyTable are not in use.
 
-KeyFile			/var/db/dkim/example.private
+# KeyFile			/etc/opendkim/keys/example.private
 
 ##  KeyTable dataset
 ##  	default (none)
@@ -418,7 +402,7 @@ KeyFile			/var/db/dkim/example.private
 ##  Name of the file where the filter should write its pid before beginning
 ##  normal operations.
 
-# PidFile		filename
+# PidFile		/run/opendkim/opendkim.pid
 
 ##  POPDBFile dataset
 ##  	default (none)
@@ -644,7 +628,7 @@ Selector		my-selector-name
 ##  inet:port			to listen on all interfaces
 ##  local:/path/to/socket	to listen on a UNIX domain socket
 
-Socket			inet:port@localhost
+Socket			unix:/run/opendkim/opendkim.sock
 
 ##  SoftwareHeader { yes | no }
 ##  	default "no"
@@ -744,7 +728,7 @@ Syslog			Yes
 ##  The system has its own default which will be used (usually 022).
 ##  See the umask(2) man page for more information.
 
-# UMask			022
+UMask			002
 
 ##  Userid userid
 ##  	default (none)
