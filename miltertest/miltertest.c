@@ -1,5 +1,11 @@
 /*
 **  Copyright (c) 2009-2014, The Trusted Domain Project.  All rights reserved.
+**
+**  Copyright 2025 OpenDKIM contributors.
+*/
+
+/* Note: This file currently works with Lua5.1 through Lua5.4.
+** Checked in September 2025.
 */
 
 #include "build-config.h"
@@ -4009,13 +4015,16 @@ main(int argc, char **argv)
 	}
 
 	/* register functions */
+/* The below LUA_VERSION_NUM >= 502 changes cover Lua5.2, Lua5.3, and Lua5.4.
+** Checked in September 2025.
+*/
 #if LUA_VERSION_NUM >= 502
 	luaL_newlib(l, mt_library);
 	lua_setglobal(l, "mt");
 #else /* LUA_VERSION_NUM >= 502 */
 	luaL_register(l, "mt", mt_library);
-#endif /* LUA_VERSION_NUM >= 502 */
 	lua_pop(l, 1);
+#endif /* LUA_VERSION_NUM >= 502 */
 
 	/* register constants */
 	lua_pushnumber(l, MT_HDRINSERT);

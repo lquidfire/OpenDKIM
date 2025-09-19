@@ -1,5 +1,11 @@
 /*
 **  Copyright (c) 2009-2015, The Trusted Domain Project.  All rights reserved.
+**
+**  Copyright 2025 OpenDKIM contributors.
+*/
+
+/* Note: This file currently works with Lua5.1 through Lua5.4.
+** Checked in September 2025.
 */
 
 #include "build-config.h"
@@ -490,8 +496,8 @@ dkimf_lua_setup_hook(void *ctx, const char *script, size_t scriptlen,
 	lua_setglobal(l, "odkim");
 # else /* LUA_VERSION_NUM >= 502 */
 	luaL_register(l, "odkim", dkimf_lua_lib_setup);
-# endif /* LUA_VERSION_NUM >= 502 */
 	lua_pop(l, 1);
+# endif /* LUA_VERSION_NUM >= 502 */
 
 	/*
 	**  Register constants.
@@ -649,8 +655,8 @@ dkimf_lua_screen_hook(void *ctx, const char *script, size_t scriptlen,
 	lua_setglobal(l, "odkim");
 # else /* LUA_VERSION_NUM >= 502 */
 	luaL_register(l, "odkim", dkimf_lua_lib_screen);
-# endif /* LUA_VERSION_NUM >= 502 */
 	lua_pop(l, 1);
+# endif /* LUA_VERSION_NUM >= 502 */
 
 	/*
 	**  Register constants.
@@ -798,8 +804,8 @@ dkimf_lua_stats_hook(void *ctx, const char *script, size_t scriptlen,
 	lua_setglobal(l, "odkim");
 # else /* LUA_VERSION_NUM >= 502 */
 	luaL_register(l, "odkim", dkimf_lua_lib_stats);
-# endif /* LUA_VERSION_NUM >= 502 */
 	lua_pop(l, 1);
+# endif /* LUA_VERSION_NUM >= 502 */
 
 	/*
 	**  Register constants.
@@ -1039,8 +1045,8 @@ dkimf_lua_final_hook(void *ctx, const char *script, size_t scriptlen,
 	lua_setglobal(l, "odkim");
 # else /* LUA_VERSION_NUM >= 502 */
 	luaL_register(l, "odkim", dkimf_lua_lib_final);
-# endif /* LUA_VERSION_NUM >= 502 */
 	lua_pop(l, 1);
+# endif /* LUA_VERSION_NUM >= 502 */
 
 	/*
 	**  Register constants.
