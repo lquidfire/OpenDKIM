@@ -1500,124 +1500,99 @@ LIBLUA_LIBDIRS=""
 LIBLUA_LIBS=""
 lua_found="no"
 
-if test \(  x"$luapath" = x"auto" -o x"$luapath" = x"yes" \) -a x"$PKG_CONFIG" != x""
+# Check for lua.pc - This is the norm across Operating Systems now.
+if test \( x"$luapath" = x"auto" -o x"$luapath" = x"yes" \) -a x"$PKG_CONFIG" != x""
 then
-  PKG_CHECK_MODULES([LIBLUA], [lua5.1], [
-      LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
-      lua_found="yes"
-    ],
-    [
-      AC_MSG_WARN([pkg-config for lua5.1 not found, trying lua...])
-      PKG_CHECK_MODULES([LIBLUA], [lua], [
-          LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
-          lua_found="yes"
-        ],
-	[AC_MSG_WARN([pkg-config for lua not found, trying manual search...])]
-      )
-    ]
-  )
+  PKG_CHECK_MODULES([LIBLUA], [lua], [
+    LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
+    lua_found="yes"
+  ], [
+    # Fallback for systems with only versioned pkg-config files
+    PKG_CHECK_MODULES([LIBLUA], [lua5.4 lua5.3 lua5.2 lua5.1], [
+        LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
+        lua_found="yes"
+    ], [
+        AC_MSG_WARN([pkg-config for lua not found, trying manual search...])
+    ])
+  ])
 fi
 
+# Manual search fallback for systems without pkg-config
 if test \( x"$luapath" = x"yes" -o x"$luapath" = x"auto" \) -a x"$lua_found" = x"no"
 then
-	AC_MSG_CHECKING([for Lua])
-	luadirs="/usr /usr/local"
-	for d in $luadirs
-	do
-		if test -f $d/include/lua51/lua.h
-		then
-			AC_MSG_RESULT($d)
-			LIBLUA_INCDIRS="-I$d/include/lua51"
-			LIBLUA_LIBDIRS="-L$d/lib/lua51"
-			LIBLUA_LIBS="-llua -lm"
-			lua_found="yes"
-			break
-		elif test -f $d/include/lua52/lua.h
-		then
-			AC_MSG_RESULT($d)
-			LIBLUA_INCDIRS="-I$d/include/lua52"
-			LIBLUA_LIBDIRS="-L$d/lib/lua52"
-			LIBLUA_LIBS="-llua -lm"
-			lua_found="yes"
-			break
-		elif test -f $d/include/lua5.1/lua.h
-		then
-			AC_MSG_RESULT($d)
-			LIBLUA_INCDIRS="-I$d/include/lua5.1"
-			LIBLUA_LIBDIRS="-L$d/lib"
-			LIBLUA_LIBS="-llua5.1 -lm"
-			lua_found="yes"
-			break
-		elif test -f $d/include/lua5.2/lua.h
-		then
-			AC_MSG_RESULT($d)
-			LIBLUA_INCDIRS="-I$d/include/lua5.2"
-			LIBLUA_LIBDIRS="-L$d/lib"
-			LIBLUA_LIBS="-llua5.2 -lm"
-			lua_found="yes"
-			break
-		elif test -f $d/include/lua.h
-		then
-			AC_MSG_RESULT($d)
-			LIBLUA_INCDIRS="-I$d/include"
-			LIBLUA_LIBDIRS="-L$d/lib"
-			LIBLUA_LIBS="-llua -lm"
-			lua_found="yes"
-			break
-		fi
-	done
-	if test x"$LIBLUA_LIBS" = x""
-	then
-		LIBLUA_INCDIRS=""
-		LIBLUA_LIBDIRS=""
-		LIBLUA_LIBS=""
-		AC_MSG_ERROR(not found)
-	else
-		lua_found="yes"
-	fi
+    AC_MSG_CHECKING([for Lua headers manually])
+    luadirs="/usr /usr/local /opt/local"
+    lua_versions="5.4 5.3 5.2 5.1"
+
+    for d in $luadirs; do
+        # Check standard location first
+        if test -f $d/include/lua.h; then
+            AC_MSG_RESULT([$d (standard)])
+            LIBLUA_INCDIRS="-I$d/include"
+            LIBLUA_LIBDIRS="-L$d/lib"
+            LIBLUA_LIBS="-llua -lm"
+            lua_found="yes"
+            break
+        fi
+        # Check versioned directories
+        for ver in $lua_versions; do
+            if test -f $d/include/lua$ver/lua.h; then
+                AC_MSG_RESULT([$d (lua$ver)])
+                LIBLUA_INCDIRS="-I$d/include/lua$ver"
+                LIBLUA_LIBDIRS="-L$d/lib"
+                LIBLUA_LIBS="-llua$ver -lm"
+                lua_found="yes"
+                break 2
+            fi
+        done
+    done
+
+    if test x"$lua_found" = x"no"; then
+        AC_MSG_ERROR([Lua headers not found. Install lua-dev/lua-devel or use --with-lua=PATH])
+    fi
 fi
 
+# Handle explicit path specification
 if test x"$luapath" != x"yes" -a x"$luapath" != x"auto" -a x"$luapath" != x"no"
 then
-	AC_MSG_CHECKING([for Lua])
-	if test -f $luapath/include/lua51/lua.h
-	then
-		AC_MSG_RESULT($luapath)
-		LIBLUA_INCDIRS="-I$luapath/include/lua51"
-		LIBLUA_LIBDIRS="-L$luapath/lib/lua51"
-		LIBLUA_LIBS="-llua -lm"
-		lua_found="yes"
-	elif test -f $luapath/include/lua52/lua.h
-	then
-		AC_MSG_RESULT($luapath)
-		LIBLUA_INCDIRS="-I$luapath/include/lua52"
-		LIBLUA_LIBDIRS="-L$luapath/lib/lua52"
-		LIBLUA_LIBS="-llua -lm"
-		lua_found="yes"
-	elif test -f $luapath/include/lua5.1/lua.h
-	then
-		AC_MSG_RESULT($luapath)
-		LIBLUA_INCDIRS="-I$luapath/include/lua5.1"
-		LIBLUA_LIBDIRS="-L$luapath/lib"
-		LIBLUA_LIBS="-llua5.1 -lm"
-		lua_found="yes"
-	elif test -f $luapath/include/lua5.2/lua.h
-	then
-		AC_MSG_RESULT($luapath)
-		LIBLUA_INCDIRS="-I$luapath/include/lua5.2"
-		LIBLUA_LIBDIRS="-L$luapath/lib"
-		LIBLUA_LIBS="-llua5.2 -lm"
-		lua_found="yes"
-	elif test -f $luapath/include/lua.h
-	then
-		AC_MSG_RESULT($luapath)
-		LIBLUA_INCDIRS="-I$luapath/include"
-		LIBLUA_LIBDIRS="-L$luapath/lib"
-		LIBLUA_LIBS="-llua -lm"
-		lua_found="yes"
-	else
-		AC_MSG_ERROR(not found at $luapath)
-	fi
+    AC_MSG_CHECKING([for Lua at $luapath])
+
+    # Define search patterns: "version:libname"
+    lua_patterns="5.4:-llua5.4 5.3:-llua5.3 5.2:-llua5.2 5.1:-llua5.1 .:-llua"
+
+    for pattern in $lua_patterns; do
+        ver="${pattern%:*}"
+        libname="${pattern#*:}"
+
+        if test "$ver" = "."; then
+            # Standard location
+            header_path="$luapath/include/lua.h"
+            inc_dir="-I$luapath/include"
+            lib_dir="-L$luapath/lib"
+        else
+            # Versioned subdirectory
+            header_path="$luapath/include/lua$ver/lua.h"
+            inc_dir="-I$luapath/include/lua$ver"
+            lib_dir="-L$luapath/lib"
+        fi
+
+        if test -f "$header_path"; then
+            if test "$ver" = "."; then
+		AC_MSG_RESULT([$luapath (standard)])
+	    else
+		AC_MSG_RESULT([$luapath (lua$ver)])
+	    fi
+            LIBLUA_INCDIRS="$inc_dir"
+            LIBLUA_LIBDIRS="$lib_dir"
+            LIBLUA_LIBS="$libname -lm"
+            lua_found="yes"
+            break
+        fi
+    done
+
+    if test x"$lua_found" = x"no"; then
+        AC_MSG_ERROR([Lua not found at $luapath])
+    fi
 fi
 
 if test x"$lua_found" = x"yes"
@@ -1675,8 +1650,7 @@ AC_ARG_WITH([sql-backend],
                            [selection of SQL backend in use]),
             [SQL_BACKEND="$withval"], [SQL_BACKEND="mysql"])
 AC_SUBST(SQL_BACKEND)
-AC_DEFINE_UNQUOTED(SQL_BACKEND, "$SQL_BACKEND", [default SQL back-end])
-
+AC_DEFINE_UNQUOTED(SQL_BA
 #
 # libodbx
 #
