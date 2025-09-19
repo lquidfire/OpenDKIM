@@ -796,22 +796,30 @@ fi
 
 if test \( "$sslpath" = "auto" -o x"$sslpath" = x"yes" \) -a x"$PKG_CONFIG" != x""
 then
-	PKG_CHECK_MODULES([LIBCRYPTO], [openssl >= 1.0.0],
+	PKG_CHECK_MODULES([LIBCRYPTO], [openssl >= 1.1.0],
 	                  [openssl_found="yes"],
 	                  [openssl_found="no"
-	                   AC_MSG_WARN([pkg-config for openssl not found, trying manual search...])
+	                   AC_MSG_WARN([OpenSSL >= 1.1.0 not found via pkg-config, trying manual search...])
 	                  ])
 elif test "$sslpath" != "auto" -a x"$sslpath" != x"yes"
 then
 	AC_MSG_CHECKING([for OpenSSL includes])
 	if test -f $sslpath/include/openssl/opensslv.h
 	then
-		LIBCRYPTO_CPPFLAGS="-I$sslpath/include"
-		LIBCRYPTO_CFLAGS=""
-		LIBCRYPTO_LIBDIRS="-L$sslpath/lib"
-		LIBCRYPTO_LIBS="-lssl -lcrypto"
-		openssl_found=yes
-		AC_MSG_RESULT([$sslpath])
+		AC_MSG_CHECKING([OpenSSL version])
+		if grep -E "OPENSSL_VERSION_NUMBER.*0x(1[1-9a-fA-F]|[2-9a-fA-F])" $sslpath/include/openssl/opensslv.h > /dev/null
+		then
+			AC_MSG_RESULT([>= 1.1.0])
+			LIBCRYPTO_CPPFLAGS="-I$sslpath/include"
+			LIBCRYPTO_CFLAGS=""
+			LIBCRYPTO_LIBDIRS="-L$sslpath/lib"
+			LIBCRYPTO_LIBS="-lssl -lcrypto"
+			openssl_found=yes
+			AC_MSG_RESULT([$sslpath])
+		else
+			AC_MSG_RESULT([< 1.1.0])
+			AC_MSG_ERROR([OpenSSL >= 1.1.0 required, found older version at $sslpath])
+		fi
 	else
 		AC_MSG_RESULT([no])
 	fi
@@ -827,9 +835,12 @@ then
 		do
 			if test -f $d/include/openssl/opensslv.h
 			then
-				sslpath=$d
-				openssl_found=yes
-				break
+				if grep -E "OPENSSL_VERSION_NUMBER.*0x(1[1-9a-fA-F]|[2-9a-fA-F])" $d/include/openssl/opensslv.h > /dev/null
+				then
+					sslpath=$d
+					openssl_found=yes
+					break
+				fi
 			fi
 		done
 	fi
@@ -874,29 +885,6 @@ then
 	AC_SEARCH_LIBS([ERR_peek_error], [crypto], ,
 	               AC_MSG_ERROR([libcrypto not found]))
 
-
-	AC_LINK_IFELSE(
-		       [AC_LANG_PROGRAM([[#include <openssl/ssl.h>]],
-					[[SSL_library_init();]])],
-					[od_have_ossl="yes";],
-					[od_have_ossl="no";])
-	if test x"$od_have_ossl" = x"no"
-	then
-		if test x"$enable_shared" = x"yes"
-		then
-			AC_MSG_ERROR([Cannot build shared opendkim
-			              against static openssl libraries.
-			              Configure with --disable-shared
-			              to get this working or obtain a
-			              shared libssl library for
-			              opendkim to use.])
-		fi
-
-		LIBCRYPTO_LIBS="$LIBCRYPTO_LIBS -ldl"
-		AC_SEARCH_LIBS([SSL_library_init], [ssl], ,
-		               AC_MSG_ERROR([libssl not found]), [-ldl])
-	fi
-
 	AC_CHECK_DECL([EVP_PKEY_ED25519],
                       AC_DEFINE([HAVE_ED25519], 1,
  	                        [Define to 1 if your crypto library has ED25519 support]), ,
@@ -904,11 +892,10 @@ then
 #include <sys/types.h>
 #include <openssl/evp.h>])
 
-	AC_CHECK_DECL([SHA256_DIGEST_LENGTH],
-                      AC_DEFINE([HAVE_SHA256], 1,
- 	                        [Define to 1 if your crypto library has SHA256 support]),
-	              AC_MSG_WARN([SHA256 is required for DKIM but is not
-	                           supported with your version of OpenSSL]),
+	# SHA256 is guaranteed in OpenSSL 1.1.0+, just verify it exists
+	# This can be removed in the future as we are moving to EVP anyway.
+	AC_CHECK_DECL([SHA256_DIGEST_LENGTH], ,
+	              AC_MSG_ERROR([SHA256 support is required]),
 	              [
 #include <sys/types.h>
 #include <openssl/sha.h>])

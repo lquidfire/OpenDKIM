@@ -154,21 +154,20 @@ struct dkim_siginfo
 
 #ifdef USE_GNUTLS
 /* struct dkim_sha -- stuff needed to do a sha hash */
-struct dkim_sha
+struct dkim_hash    // Renamed from dkim_sha
 {
-	int			sha_tmpfd;
-	u_int			sha_outlen;
-	gnutls_hash_hd_t	sha_hd;
-	u_char *		sha_out;
+	int                hash_tmpfd;
+	u_int              hash_outlen;
+	gnutls_hash_hd_t   hash_hd;
+	u_char *           hash_out;
 };
 #else /* USE_GNUTLS */
-/* struct dkim_sha256 -- stuff needed to do a sha256 hash */
-struct dkim_sha256
+struct dkim_hash     // Renamed from dkim_sha256
 {
-	int			sha256_tmpfd;
-	BIO *			sha256_tmpbio;
-	EVP_MD_CTX		*sha256_ctx;
-	u_char			sha256_out[EVP_MAX_MD_SIZE];
+	int                hash_tmpfd;
+	BIO *              hash_tmpbio;
+	EVP_MD_CTX *       hash_ctx;        // Renamed from sha256_ctx
+	u_char             hash_out[EVP_MAX_MD_SIZE];  // Renamed from sha256_out
 };
 #endif /* USE_GNUTLS */
 
@@ -214,8 +213,8 @@ struct dkim_crypto
 	int			crypto_keysize;
 	size_t			crypto_inlen;
 	size_t			crypto_outlen;
-	EVP_PKEY *		crypto_pkey;
-	void *			crypto_key;
+	EVP_PKEY *		crypto_pkey;	// Modern: Use this for all operations
+	void *			crypto_key;	// DEPRECATED: Legacy RSA* pointer, always NULL in modern code
 	BIO *			crypto_keydata;
 	u_char *		crypto_in;
 	u_char *		crypto_out;

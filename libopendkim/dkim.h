@@ -180,8 +180,9 @@ typedef int dkim_canon_t;
 
 /*
 **  DKIM_SIGN -- signing method
-*
-*    RSASHA1 was option 0. We keep the numbering for compatibility.
+**
+**    NOTE: RSASHA1 (was option 0) has been removed for security reasons.
+**        Numbering preserved for compatibility.
 */
 
 typedef int dkim_alg_t;
