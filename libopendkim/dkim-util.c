@@ -16,6 +16,7 @@
 #endif /* HAVE_STDBOOL_H */
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <assert.h>
 #include <unistd.h>
 #include <limits.h>
