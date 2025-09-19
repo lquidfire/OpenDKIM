@@ -329,7 +329,7 @@ void
 rbl_res_close(void *srv)
 {
 #ifdef HAVE_RES_NINIT
-	struct state *res;
+	struct __res_state *res;
 
 	res = srv;
 
