@@ -4540,9 +4540,7 @@ dkim_init(void *(*caller_mallocf)(void *closure, size_t nbytes),
 #ifdef QUERY_CACHE
 	FEATURE_ADD(libhandle, DKIM_FEATURE_QUERY_CACHE);
 #endif /* QUERY_CACHE */
-#ifdef HAVE_SHA256
 	FEATURE_ADD(libhandle, DKIM_FEATURE_SHA256);
-#endif /* HAVE_SHA256 */
 #ifdef HAVE_ED25519
 	FEATURE_ADD(libhandle, DKIM_FEATURE_ED25519);
 #endif /* HAVE_ED25519 */
