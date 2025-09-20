@@ -85,10 +85,21 @@
 			"\r\n" \
 			"Joe.\r\n"
 
-/* KEY is no longer SHA1 key, but an Ed25519-sha256 key! */
-#define KEY		"-----BEGIN PRIVATE KEY-----\n" \
-	"MC4CAQAwBQYDK2VwBCIEIAUaY76CjnuKE8eHZzjDZvuPlrKPnJsvS0XbARwh30HX\n" \
-	"-----END PRIVATE KEY-----\n"
+#define KEY		"-----BEGIN RSA PRIVATE KEY-----\n" \
+	"MIICXQIBAAKBgQC4GUGr+d/6SFNzVLYpphnRd0QPGKz2uWnV65RAxa1Pw352Bqiz\n" \
+	"qiKOBjgYGzj8pJQSs8tOvv/2k6jpI809RnESqOFgF0gu3UJbNnu3+cd8k/kiQj+q\n" \
+	"4cKKRpAT92ccxc7svhCNgN1sBGmROYZuysG3Vu3Dyc079gSLtnSrgXb+gQIDAQAB\n" \
+	"AoGAemlI0opm1Kvs2T4VliH8/tvX5FXbBH8LEZQAUwVeFTB/UQlieXyCV39pIxZO\n" \
+	"0Sa50qm8YNL9rb5HTSZiHQFOwyAKNqS4m/7JCsbuH4gQkPgPF561BHNL9oKfYgJq\n" \
+	"9P4kEFfDTBoXKBMxwWtT7AKV8dYvCa3vYzPQ/1BnqQdw2zECQQDyscdgR9Ih59PQ\n" \
+	"b72ddibdsxS65uXS2vzYLe7SKl+4R5JgJzw0M6DTAnoYFf6JAsKGZM15PCC0E16t\n" \
+	"RRo47U9VAkEAwjEVrlQ0/8yPACbDggDJg/Zz/uRu1wK0zjqj4vKjleubaX4SEvj7\n" \
+	"r6xxZm9hC1pMJAC9y3bbkbgCRBjXfyY6fQJBANe5aq2MaZ41wTOPf45NjbKXEiAo\n" \
+	"SbUpboKCIbyyaa8V/2h0t7D3C0dE9l4efsguqdZoF7Rh2/f1F70QpYRgfJkCQQCH\n" \
+	"oRrAeGXP50JVW72fNgeJGH/pnghgOa6of0JpxwhENJuGMZxUDfxTtUA6yD3iXP3j\n" \
+	"A3WL/wbaHsfOYf9Y+g1NAkAGLhx67Ah+uBNK4Xvfz0YPGINX20m+CMsxAw7FOaNv\n" \
+	"IW2oWFfZCB4APkIis79Ql45AHpavwx5XodBMzZwJUvlL\n" \
+	"-----END RSA PRIVATE KEY-----\n"
 #define SMALLKEY	"-----BEGIN RSA PRIVATE KEY-----\n" \
 	"MIIBOwIBAAJBAKmXwtw3FU/88TPoOpYR3FKkD4ViDLQZOSitce6cJzdoksJ2Vs9T\n" \
 	"l6d1V9OIOsvktC1nmaZ8Xs5I7oMkJF8PbXUCAwEAAQJBAJxAG6NDCNrKY/x8AMZV\n" \

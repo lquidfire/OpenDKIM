@@ -1,0 +1,1 @@
+test._domainkey	IN	TXT	( "v=DKIM1; k=ed25519; p=KZqCOx27eW/3EwXhE2uHfQo3ZD68+R/2f0jKmUwiMjk=" )

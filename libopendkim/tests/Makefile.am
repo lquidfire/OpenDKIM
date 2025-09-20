@@ -42,7 +42,8 @@ check_PROGRAMS = t-setup t-test00 t-test01 t-test02 t-test03 t-test04 \
 	t-test145 t-test146 t-test147 t-test148 t-test149 t-test150 \
 	t-test151 t-test152 t-test153 t-test154 t-test155 t-test156 \
 	t-test157 t-test158 t-test159 \
-	t-signperf t-verifyperf
+	t-signperf t-verifyperf \
+	t-test00NEW
 check_SCRIPTS = t-signperf-sha1 t-signperf-relaxed-relaxed \
 	t-signperf-simple-simple
 if ALL_SYMBOLS
@@ -219,6 +220,7 @@ t_test156_SOURCES = t-test156.c t-testdata.h
 t_test157_SOURCES = t-test157.c t-testdata.h
 t_test158_SOURCES = t-test158.c t-testdata.h
 t_test159_SOURCES = t-test159.c t-testdata.h
+t_test00NEW_SOURCES = t-test00NEW.c t-testdata.h
 
 MOSTLYCLEANFILES=
 
@@ -254,7 +256,7 @@ dist_doc_DATA=lcov
 MAINTAINERCLEANFILES=description.txt description.html
 MOSTLYCLEANFILES+=*.info .prepare-lcov .info-files *.gcno *.gcda
 
-#.info-files: check-TESTS 
+#.info-files: check-TESTS
 #	for i in $(PROF_SRCS); do \
 #		x=`echo $$i | sed 's/\..*//g'`; \
 #		if test -f ../libopendkim_la-$$x.gcno -a \
@@ -292,7 +294,7 @@ description.txt: $(check_PROGRAMS) $(check_SCRIPTS)
 		grep '^#' $$i | tail -n 1 | \
 		(echo $${testname} ; sed -e 's/^# \(.*\)/\t\1\n/g' ) >> $@; \
 	done
- 
+
 description.html: description.txt
 	gendesc --output $@ $?
 

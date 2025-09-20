@@ -1,0 +1,4509 @@
+Only in projects/opendkim: aclocal.m4
+Only in projects/opendkim/autobuild: .deps
+Only in projects/opendkim/autobuild: Makefile
+Only in projects/opendkim/autobuild: Makefile.in
+Only in projects/opendkim: autom4te.cache
+Only in projects/opendkim/build-aux: compile
+Only in projects/opendkim/build-aux: config.guess
+Only in projects/opendkim/build-aux: config.sub
+Only in projects/opendkim/build-aux: depcomp
+Only in projects/opendkim/build-aux: install-sh
+Only in projects/opendkim/build-aux: ltmain.sh
+Only in projects/opendkim/build-aux: missing
+Only in projects/opendkim/build-aux: test-driver
+Only in projects/opendkim: build-config.h
+Only in projects/opendkim: build-config.h.in
+Only in projects/opendkim: config.log
+Only in projects/opendkim: config.status
+Only in /tmp/OpenDKIM: configure
+Only in projects/opendkim: configure~
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/configure.ac /tmp/OpenDKIM/configure.ac
+6,8c6
+< #
+< # Copyright 2025 OpenDKIM contributors.
+< #
+---
+> # 
+18,19c16,17
+< m4_define([VERSION_RELEASE], 3)
+< m4_define([VERSION_MAJOR_REV], 0)
+---
+> m4_define([VERSION_RELEASE], 2)
+> m4_define([VERSION_MAJOR_REV], 11)
+28c26
+< m4_define([LIBVERSION_CURRENT], 12)
+---
+> m4_define([LIBVERSION_CURRENT], 11)
+35c33
+< AC_INIT([OpenDKIM],[VERSION_RELEASE.VERSION_MAJOR_REV.VERSION_MINOR_REV]-beta1,[https://github.com/lquidfire/opendkim/issues])
+---
+> AC_INIT([OpenDKIM],[VERSION_RELEASE.VERSION_MAJOR_REV.VERSION_MINOR_REV],[bugs@opendkim.org])
+51c49
+< #
+---
+> # 
+57c55
+< #
+---
+> # 
+120a119,122
+> 
+> # Before using resolv.h, we need to check headers required for it.
+> AC_HEADER_RESOLV
+> 
+122c124,136
+< m4_define([AC_LANG_CALL], [AC_LANG_PROGRAM([#include <resolv.h>],
+---
+> m4_define([AC_LANG_CALL], [AC_LANG_PROGRAM([#ifdef HAVE_SYS_TYPES_H
+> #  include <sys/types.h>
+> #endif
+> #ifdef HAVE_NETINET_IN_H
+> #  include <netinet/in.h>   /* inet_ functions / structs */
+> #endif
+> #ifdef HAVE_ARPA_NAMESER_H
+> #  include <arpa/nameser.h> /* DNS HEADER struct */
+> #endif
+> #ifdef HAVE_NETDB_H
+> #  include <netdb.h>
+> #endif
+> #include <resolv.h>],
+124c138
+< AC_SEARCH_LIBS(res_ninit, resolv,
+---
+> AC_SEARCH_LIBS(res_ninit, resolv bind,
+135,136d148
+< AC_HEADER_RESOLV
+< 
+147c159
+< #include "confdefs.h"
+---
+> #include "confdefs.h" 
+151c163
+< #include <resolv.h>
+---
+> #include <resolv.h> 
+182c194
+< 
+---
+>  
+465c477
+< #
+---
+> # 
+593c605
+< #
+---
+> # 
+751c763
+< 		#endif
+---
+> 		#endif 
+801c813
+< 	PKG_CHECK_MODULES([LIBCRYPTO], [openssl >= 1.1.0],
+---
+> 	PKG_CHECK_MODULES([LIBCRYPTO], [openssl >= 0.9.7],
+804c816
+< 	                   AC_MSG_WARN([OpenSSL >= 1.1.0 not found via pkg-config, trying manual search...])
+---
+> 	                   AC_MSG_WARN([pkg-config for openssl not found, trying manual search...])
+811,824c823,828
+< 		AC_MSG_CHECKING([OpenSSL version])
+< 		if grep -E "OPENSSL_VERSION_NUMBER.*0x(1[1-9a-fA-F]|[2-9a-fA-F])" $sslpath/include/openssl/opensslv.h > /dev/null
+< 		then
+< 			AC_MSG_RESULT([>= 1.1.0])
+< 			LIBCRYPTO_CPPFLAGS="-I$sslpath/include"
+< 			LIBCRYPTO_CFLAGS=""
+< 			LIBCRYPTO_LIBDIRS="-L$sslpath/lib"
+< 			LIBCRYPTO_LIBS="-lssl -lcrypto"
+< 			openssl_found=yes
+< 			AC_MSG_RESULT([$sslpath])
+< 		else
+< 			AC_MSG_RESULT([< 1.1.0])
+< 			AC_MSG_ERROR([OpenSSL >= 1.1.0 required, found older version at $sslpath])
+< 		fi
+---
+> 		LIBCRYPTO_CPPFLAGS="-I$sslpath/include"
+> 		LIBCRYPTO_CFLAGS=""
+> 		LIBCRYPTO_LIBDIRS="-L$sslpath/lib"
+> 		LIBCRYPTO_LIBS="-lssl -lcrypto"
+> 		openssl_found=yes
+> 		AC_MSG_RESULT([$sslpath])
+840,845c844,846
+< 				if grep -E "OPENSSL_VERSION_NUMBER.*0x(1[1-9a-fA-F]|[2-9a-fA-F])" $d/include/openssl/opensslv.h > /dev/null
+< 				then
+< 					sslpath=$d
+< 					openssl_found=yes
+< 					break
+< 				fi
+---
+> 				sslpath=$d
+> 				openssl_found=yes
+> 				break
+889a891,913
+> 
+> 	AC_LINK_IFELSE(
+> 		       [AC_LANG_PROGRAM([[#include <openssl/ssl.h>]],
+> 					[[SSL_library_init();]])],
+> 					[od_have_ossl="yes";],
+> 					[od_have_ossl="no";])
+> 	if test x"$od_have_ossl" = x"no"
+> 	then
+> 		if test x"$enable_shared" = x"yes"
+> 		then
+> 			AC_MSG_ERROR([Cannot build shared opendkim
+> 			              against static openssl libraries.
+> 			              Configure with --disable-shared
+> 			              to get this working or obtain a
+> 			              shared libssl library for
+> 			              opendkim to use.])
+> 		fi
+> 
+> 		LIBCRYPTO_LIBS="$LIBCRYPTO_LIBS -ldl"
+> 		AC_SEARCH_LIBS([SSL_library_init], [ssl], ,
+> 		               AC_MSG_ERROR([libssl not found]), [-ldl])
+> 	fi
+> 
+897,900c921,925
+< 	# SHA256 is guaranteed in OpenSSL 1.1.0+, just verify it exists
+< 	# This can be removed in the future as we are moving to EVP anyway.
+< 	AC_CHECK_DECL([SHA256_DIGEST_LENGTH], ,
+< 	              AC_MSG_ERROR([SHA256 support is required]),
+---
+> 	AC_CHECK_DECL([SHA256_DIGEST_LENGTH],
+>                       AC_DEFINE([HAVE_SHA256], 1,
+>  	                        [Define to 1 if your crypto library has SHA256 support]),
+> 	              AC_MSG_WARN([SHA256 is required for DKIM but is not
+> 	                           supported with your version of OpenSSL]),
+1040c1065
+< #
+---
+> # 
+1054c1079
+< 	PKG_CHECK_MODULES([RRDTOOL], [librrd],
+---
+> 	PKG_CHECK_MODULES([RRDTOOL], [librrd], 
+1116c1141
+< #
+---
+> # 
+1126c1151
+< 	PKG_CHECK_MODULES([LIBMEMCACHED], [libmemcached >= 0.36],
+---
+> 	PKG_CHECK_MODULES([LIBMEMCACHED], [libmemcached >= 0.36], 
+1190c1215
+< 		AC_MSG_RESULT([ok]),
+---
+> 		AC_MSG_RESULT([ok]), 
+1414c1439
+<         	PKG_CHECK_MODULES([LIBTRE], [tre >= 0.7.5],
+---
+>         	PKG_CHECK_MODULES([LIBTRE], [tre >= 0.7.5], 
+1505,1506c1530
+< # Check for lua.pc - This is the norm across Operating Systems now.
+< if test \( x"$luapath" = x"auto" -o x"$luapath" = x"yes" \) -a x"$PKG_CONFIG" != x""
+---
+> if test \(  x"$luapath" = x"auto" -o x"$luapath" = x"yes" \) -a x"$PKG_CONFIG" != x""
+1508,1519c1532,1545
+<   PKG_CHECK_MODULES([LIBLUA], [lua], [
+<     LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
+<     lua_found="yes"
+<   ], [
+<     # Fallback for systems with only versioned pkg-config files
+<     PKG_CHECK_MODULES([LIBLUA], [lua5.4 lua5.3 lua5.2 lua5.1], [
+<         LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
+<         lua_found="yes"
+<     ], [
+<         AC_MSG_WARN([pkg-config for lua not found, trying manual search...])
+<     ])
+<   ])
+---
+>   PKG_CHECK_MODULES([LIBLUA], [lua5.1], [
+>       LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
+>       lua_found="yes"
+>     ],
+>     [
+>       AC_MSG_WARN([pkg-config for lua5.1 not found, trying lua...])
+>       PKG_CHECK_MODULES([LIBLUA], [lua], [
+>           LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
+>           lua_found="yes"
+>         ],
+> 	[AC_MSG_WARN([pkg-config for lua not found, trying manual search...])]
+>       )
+>     ]
+>   )
+1522d1547
+< # Manual search fallback for systems without pkg-config
+1525,1554c1550,1604
+<     AC_MSG_CHECKING([for Lua headers manually])
+<     luadirs="/usr /usr/local /opt/local"
+<     lua_versions="5.4 5.3 5.2 5.1"
+< 
+<     for d in $luadirs; do
+<         # Check standard location first
+<         if test -f $d/include/lua.h; then
+<             AC_MSG_RESULT([$d (standard)])
+<             LIBLUA_INCDIRS="-I$d/include"
+<             LIBLUA_LIBDIRS="-L$d/lib"
+<             LIBLUA_LIBS="-llua -lm"
+<             lua_found="yes"
+<             break
+<         fi
+<         # Check versioned directories
+<         for ver in $lua_versions; do
+<             if test -f $d/include/lua$ver/lua.h; then
+<                 AC_MSG_RESULT([$d (lua$ver)])
+<                 LIBLUA_INCDIRS="-I$d/include/lua$ver"
+<                 LIBLUA_LIBDIRS="-L$d/lib"
+<                 LIBLUA_LIBS="-llua$ver -lm"
+<                 lua_found="yes"
+<                 break 2
+<             fi
+<         done
+<     done
+< 
+<     if test x"$lua_found" = x"no"; then
+<         AC_MSG_ERROR([Lua headers not found. Install lua-dev/lua-devel or use --with-lua=PATH])
+<     fi
+---
+> 	AC_MSG_CHECKING([for Lua])
+> 	luadirs="/usr /usr/local"
+> 	for d in $luadirs
+> 	do
+> 		if test -f $d/include/lua51/lua.h
+> 		then
+> 			AC_MSG_RESULT($d)
+> 			LIBLUA_INCDIRS="-I$d/include/lua51"
+> 			LIBLUA_LIBDIRS="-L$d/lib/lua51"
+> 			LIBLUA_LIBS="-llua -lm"
+> 			lua_found="yes"
+> 			break
+> 		elif test -f $d/include/lua52/lua.h
+> 		then
+> 			AC_MSG_RESULT($d)
+> 			LIBLUA_INCDIRS="-I$d/include/lua52"
+> 			LIBLUA_LIBDIRS="-L$d/lib/lua52"
+> 			LIBLUA_LIBS="-llua -lm"
+> 			lua_found="yes"
+> 			break
+> 		elif test -f $d/include/lua5.1/lua.h
+> 		then
+> 			AC_MSG_RESULT($d)
+> 			LIBLUA_INCDIRS="-I$d/include/lua5.1"
+> 			LIBLUA_LIBDIRS="-L$d/lib"
+> 			LIBLUA_LIBS="-llua5.1 -lm"
+> 			lua_found="yes"
+> 			break
+> 		elif test -f $d/include/lua5.2/lua.h
+> 		then
+> 			AC_MSG_RESULT($d)
+> 			LIBLUA_INCDIRS="-I$d/include/lua5.2"
+> 			LIBLUA_LIBDIRS="-L$d/lib"
+> 			LIBLUA_LIBS="-llua5.2 -lm"
+> 			lua_found="yes"
+> 			break
+> 		elif test -f $d/include/lua.h
+> 		then
+> 			AC_MSG_RESULT($d)
+> 			LIBLUA_INCDIRS="-I$d/include"
+> 			LIBLUA_LIBDIRS="-L$d/lib"
+> 			LIBLUA_LIBS="-llua -lm"
+> 			lua_found="yes"
+> 			break
+> 		fi
+> 	done
+> 	if test x"$LIBLUA_LIBS" = x""
+> 	then
+> 		LIBLUA_INCDIRS=""
+> 		LIBLUA_LIBDIRS=""
+> 		LIBLUA_LIBS=""
+> 		AC_MSG_ERROR(not found)
+> 	else
+> 		lua_found="yes"
+> 	fi
+1557d1606
+< # Handle explicit path specification
+1560,1597c1609,1647
+<     AC_MSG_CHECKING([for Lua at $luapath])
+< 
+<     # Define search patterns: "version:libname"
+<     lua_patterns="5.4:-llua5.4 5.3:-llua5.3 5.2:-llua5.2 5.1:-llua5.1 .:-llua"
+< 
+<     for pattern in $lua_patterns; do
+<         ver="${pattern%:*}"
+<         libname="${pattern#*:}"
+< 
+<         if test "$ver" = "."; then
+<             # Standard location
+<             header_path="$luapath/include/lua.h"
+<             inc_dir="-I$luapath/include"
+<             lib_dir="-L$luapath/lib"
+<         else
+<             # Versioned subdirectory
+<             header_path="$luapath/include/lua$ver/lua.h"
+<             inc_dir="-I$luapath/include/lua$ver"
+<             lib_dir="-L$luapath/lib"
+<         fi
+< 
+<         if test -f "$header_path"; then
+<             if test "$ver" = "."; then
+< 		AC_MSG_RESULT([$luapath (standard)])
+< 	    else
+< 		AC_MSG_RESULT([$luapath (lua$ver)])
+< 	    fi
+<             LIBLUA_INCDIRS="$inc_dir"
+<             LIBLUA_LIBDIRS="$lib_dir"
+<             LIBLUA_LIBS="$libname -lm"
+<             lua_found="yes"
+<             break
+<         fi
+<     done
+< 
+<     if test x"$lua_found" = x"no"; then
+<         AC_MSG_ERROR([Lua not found at $luapath])
+<     fi
+---
+> 	AC_MSG_CHECKING([for Lua])
+> 	if test -f $luapath/include/lua51/lua.h
+> 	then
+> 		AC_MSG_RESULT($luapath)
+> 		LIBLUA_INCDIRS="-I$luapath/include/lua51"
+> 		LIBLUA_LIBDIRS="-L$luapath/lib/lua51"
+> 		LIBLUA_LIBS="-llua -lm"
+> 		lua_found="yes"
+> 	elif test -f $luapath/include/lua52/lua.h
+> 	then
+> 		AC_MSG_RESULT($luapath)
+> 		LIBLUA_INCDIRS="-I$luapath/include/lua52"
+> 		LIBLUA_LIBDIRS="-L$luapath/lib/lua52"
+> 		LIBLUA_LIBS="-llua -lm"
+> 		lua_found="yes"
+> 	elif test -f $luapath/include/lua5.1/lua.h
+> 	then
+> 		AC_MSG_RESULT($luapath)
+> 		LIBLUA_INCDIRS="-I$luapath/include/lua5.1"
+> 		LIBLUA_LIBDIRS="-L$luapath/lib"
+> 		LIBLUA_LIBS="-llua5.1 -lm"
+> 		lua_found="yes"
+> 	elif test -f $luapath/include/lua5.2/lua.h
+> 	then
+> 		AC_MSG_RESULT($luapath)
+> 		LIBLUA_INCDIRS="-I$luapath/include/lua5.2"
+> 		LIBLUA_LIBDIRS="-L$luapath/lib"
+> 		LIBLUA_LIBS="-llua5.2 -lm"
+> 		lua_found="yes"
+> 	elif test -f $luapath/include/lua.h
+> 	then
+> 		AC_MSG_RESULT($luapath)
+> 		LIBLUA_INCDIRS="-I$luapath/include"
+> 		LIBLUA_LIBDIRS="-L$luapath/lib"
+> 		LIBLUA_LIBS="-llua -lm"
+> 		lua_found="yes"
+> 	else
+> 		AC_MSG_ERROR(not found at $luapath)
+> 	fi
+1621c1671
+< 				AC_MSG_RESULT([ok]),
+---
+> 				AC_MSG_RESULT([ok]), 
+1655c1705
+< AC_DEFINE_UNQUOTED(SQL_BACKEND, "$SQL_BACKEND", [SQL backend in use])
+---
+> AC_DEFINE_UNQUOTED(SQL_BACKEND, "$SQL_BACKEND", [default SQL back-end])
+1831c1881
+< 				AC_MSG_RESULT([ok]),
+---
+> 				AC_MSG_RESULT([ok]), 
+2081c2131
+< #
+---
+> # 
+2169,2177d2218
+< # libidn2 (for RFC 8616 internationalized domain names)
+< #
+< 
+< PKG_CHECK_MODULES([LIBIDN2], [libidn2 >= 2.0.0])
+< AC_DEFINE([HAVE_LIBIDN2], [1], [Define if you have libidn2])
+< AC_SUBST(LIBIDN2_CFLAGS)
+< AC_SUBST(LIBIDN2_LIBS)
+< 
+< #
+2422c2463
+< #
+---
+> # 
+2432c2473
+< #
+---
+> # 
+2539c2580
+< test "x$prefix" = xNONE && prefix=$ac_default_prefix
+---
+> test "x$prefix" = xNONE && prefix=$ac_default_prefix 
+2631,2632d2671
+< 			contrib/keygen/Makefile
+< 			contrib/keygen/opendkim-keygen.1
+2651c2690
+< 			opendkim/opendkim-lua.3
+---
+> 			opendkim/opendkim-lua.3 
+Only in projects/opendkim/contrib: ArchLinux-PKGBUILD
+Only in projects/opendkim/contrib/convert: Makefile
+Only in projects/opendkim/contrib/convert: Makefile.in
+Only in projects/opendkim/contrib/docs: Makefile
+Only in projects/opendkim/contrib/docs: Makefile.in
+Only in projects/opendkim/contrib/init/generic: Makefile
+Only in projects/opendkim/contrib/init/generic: Makefile.in
+Only in projects/opendkim/contrib/init: Makefile
+Only in projects/opendkim/contrib/init: Makefile.in
+Only in projects/opendkim/contrib/init/redhat: Makefile
+Only in projects/opendkim/contrib/init/redhat: Makefile.in
+Only in projects/opendkim/contrib/init/redhat: opendkim
+Only in projects/opendkim/contrib/init/redhat: opendkim-default-keygen
+Only in projects/opendkim/contrib/init/solaris: Makefile
+Only in projects/opendkim/contrib/init/solaris: Makefile.in
+Only in projects/opendkim/contrib: keygen
+Only in projects/opendkim/contrib/ldap: Makefile
+Only in projects/opendkim/contrib/ldap: Makefile.in
+Only in projects/opendkim/contrib/lua: Makefile
+Only in projects/opendkim/contrib/lua: Makefile.in
+Only in projects/opendkim/contrib: Makefile
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/contrib/Makefile.am /tmp/OpenDKIM/contrib/Makefile.am
+6c6
+< SUBDIRS = convert docs init keygen ldap lua patches repute spec stats systemd
+---
+> SUBDIRS = convert docs init ldap lua patches repute spec stats systemd
+Only in projects/opendkim/contrib: Makefile.in
+Only in projects/opendkim/contrib/patches: Makefile
+Only in projects/opendkim/contrib/patches: Makefile.in
+Only in projects/opendkim/contrib/repute: Makefile
+Only in projects/opendkim/contrib/repute: Makefile.in
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/contrib/repute/repute.py /tmp/OpenDKIM/contrib/repute/repute.py
+60,64c60,63
+<             defer.returnValue(
+<                 {
+<                     "application": "email-id",
+<                     "reputons": [ reputons ]
+<                 })
+---
+>             return {
+>                 "application": "email-id",
+>                 "reputons": [ reputons ]
+>             }
+86c85
+<             defer.returnValue(ret)
+---
+>             return ret
+111c110
+<             defer.returnValue(ret)
+---
+>             return ret
+Only in projects/opendkim/contrib/spec: Makefile
+Only in projects/opendkim/contrib/spec: Makefile.in
+Only in projects/opendkim/contrib/spec: opendkim.spec
+Only in projects/opendkim/contrib/stats: Makefile
+Only in projects/opendkim/contrib/stats: Makefile.in
+Only in projects/opendkim/contrib/systemd: Makefile
+Only in projects/opendkim/contrib/systemd: Makefile.in
+Only in projects/opendkim/contrib/systemd: opendkim.service
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/contrib/systemd/opendkim.service.in /tmp/OpenDKIM/contrib/systemd/opendkim.service.in
+7c7
+< Documentation=man:opendkim(8) man:opendkim.conf(5) man:opendkim-genkey(8) man:opendkim-genzone(8) man:opendkim-keygen(1) man:opendkim-testadsp(8) man:opendkim-testkey http://www.opendkim.org/docs.html
+---
+> Documentation=man:opendkim(8) man:opendkim.conf(5) man:opendkim-genkey(8) man:opendkim-genzone(8) man:opendkim-testadsp(8) man:opendkim-testkey http://www.opendkim.org/docs.html
+11,13c11,12
+< Type=simple
+< User=opendkim
+< Group=opendkim
+---
+> Type=forking
+> PIDFile=@localstatedir@/run/opendkim/opendkim.pid
+15c14
+< ExecStart=@sbindir@/opendkim -f $OPTIONS
+---
+> ExecStart=@sbindir@/opendkim $OPTIONS
+17,39c16,17
+< 
+< # Modern systemd path management
+< RuntimeDirectory=opendkim
+< RuntimeDirectoryMode=0750
+< 
+< # Basic security improvements
+< NoNewPrivileges=true
+< ProtectSystem=strict
+< ProtectHome=true
+< PrivateTmp=true
+< PrivateDevices=true
+< ProtectHostname=true
+< ProtectClock=true
+< ProtectKernelTunables=true
+< ProtectKernelModules=true
+< ProtectKernelLogs=true
+< ProtectControlGroups=true
+< RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+< RestrictRealtime=true
+< 
+< # Restart behavior
+< Restart=on-failure
+< RestartSec=5s
+---
+> User=opendkim
+> Group=opendkim
+Only in projects/opendkim/docs: Makefile
+Only in projects/opendkim/docs: Makefile.in
+Only in projects/opendkim: .editorconfig
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/.gitignore /tmp/OpenDKIM/.gitignore
+18d17
+< contrib/ArchLinux-PKGBUILD/
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/base32.c /tmp/OpenDKIM/libopendkim/base32.c
+159a160
+> #include <openssl/sha.h>
+160a162
+> 
+166d167
+< 	EVP_MD_CTX *ctx;
+168,169c169
+< 	unsigned char hashout[EVP_MAX_MD_SIZE];
+< 	unsigned int hashlen;
+---
+> 	unsigned char shaout[SHA_DIGEST_LENGTH];
+174,186c174,175
+< 	ctx = EVP_MD_CTX_new();
+< 	if (ctx == NULL) {
+< 		fprintf(stderr, "EVP_MD_CTX_new() failed\n");
+< 		return 1;
+< 	}
+< 
+< 	if (EVP_DigestInit_ex(ctx, EVP_sha256(), NULL) != 1 ||
+< 	    EVP_DigestUpdate(ctx, argv[1], strlen(argv[1])) != 1 ||
+< 	    EVP_DigestFinal_ex(ctx, hashout, &hashlen) != 1) {
+< 		fprintf(stderr, "EVP digest operations failed\n");
+< 		EVP_MD_CTX_free(ctx);
+< 		return 1;
+< 	}
+---
+> 	(void) EVP_Digest(argv[1], strlen(argv[1]), shaout, NULL, EVP_sha1(),
+> 	                  NULL);
+188c177
+< 	EVP_MD_CTX_free(ctx);
+---
+> 	x = dkim_base32_encode(buf, &buflen, shaout, SHA_DIGEST_LENGTH);
+190d178
+< 	x = dkim_base32_encode(buf, &buflen, hashout, hashlen);
+191a180
+> 
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/base64.c /tmp/OpenDKIM/libopendkim/base64.c
+2,11c2,6
+<  **  Copyright (c) 2005, 2008 Sendmail, Inc. and its suppliers.
+<  **    All rights reserved.
+<  **
+<  **  Copyright (c) 2009, 2012, The Trusted Domain Project.  All rights reserved.
+<  **
+<  **  Copyright 2025 OpenDKIM contributors.
+<  **
+<  **  Changelog:
+<  **    202509: Use OpenSSL BIO functions instead of custom base64 code.
+<  */
+---
+> **  Copyright (c) 2005, 2008 Sendmail, Inc. and its suppliers.
+> **    All rights reserved.
+> **
+> **  Copyright (c) 2009, 2012, The Trusted Domain Project.  All rights reserved.
+> */
+16,20d10
+< #include <string.h>
+< 
+< /* OpenSSL includes */
+< #include <openssl/bio.h>
+< #include <openssl/evp.h>
+24a15,35
+> /* base64 alphabet */
+> static unsigned char alphabet[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+> 
+> /* base64 decode stuff */
+> static int decoder[256] =
+> {
+> 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+> 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+> 	0, 62, 0, 0, 0, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0,
+> 	0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+> 	14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 0,
+> 	0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+> 	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0, 0, 0, 0, 0, 0, 0,
+> 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+> 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+> 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+> 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+> 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+> 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+> };
+> 
+30,41c41,52
+<  **  DKIM_BASE64_DECODE -- decode a base64 blob
+<  **
+<  **  Parameters:
+<  **  	str -- string to decode
+<  **  	buf -- where to write it
+<  **  	buflen -- bytes available at "buf"
+<  **
+<  **  Return value:
+<  **  	>= 0 -- success; length of what was decoded is returned
+<  **  	-1 -- corrupt input
+<  **  	-2 -- not enough space at "buf" or internal error
+<  */
+---
+> **  DKIM_BASE64_DECODE -- decode a base64 blob
+> **
+> **  Parameters:
+> **  	str -- string to decide
+> **  	buf -- where to write it
+> **  	buflen -- bytes available at "buf"
+> **
+> **  Return value:
+> **  	>= 0 -- success; length of what was decoded is returned
+> **  	-1 -- corrupt
+> **  	-2 -- not enough space at "buf"
+> */
+46,48c57,60
+< 	int retval = -2;
+< 	BIO *bmem;
+< 	BIO *b64;
+---
+> 	int n = 0;
+> 	int bits = 0;
+> 	int char_count = 0;
+> 	u_char *c;
+53,55c65
+< 	/* create memory BIO from input string */
+< 	bmem = BIO_new_mem_buf(str, -1);
+< 	if (bmem == NULL)
+---
+> 	for (c = str; *c != '=' && *c != '\0'; c++)
+57c67,95
+< 		return retval;
+---
+> 		/* end padding */
+> 		if (*c == '=' || *c == '\0')
+> 			break;
+> 
+> 		/* skip stuff not part of the base64 alphabet (RFC2045) */
+> 		if (!((*c >= 'A' && *c <= 'Z') ||
+> 		      (*c >= 'a' && *c <= 'z') ||
+> 		      (*c >= '0' && *c <= '9') ||
+> 		      (*c == '+') ||
+> 		      (*c == '/')))
+> 			continue;
+> 
+> 		/* everything else gets decoded */
+> 		bits += decoder[(int) *c];
+> 		char_count++;
+> 		if (n + 3 > buflen)
+> 			return -2;
+> 		if (char_count == 4)
+> 		{
+> 			buf[n++] = (bits >> 16);
+> 			buf[n++] = ((bits >> 8) & 0xff);
+> 			buf[n++] = (bits & 0xff);
+> 			bits = 0;
+> 			char_count = 0;
+> 		}
+> 		else
+> 		{
+> 			bits <<= 6;
+> 		}
+60,65c98
+< 	/* create base64 decoder and chain it to memory BIO */
+< 	b64 = BIO_push(BIO_new(BIO_f_base64()), bmem);
+< 	if (b64 == bmem)
+< 	{
+< 		goto error;
+< 	}
+---
+> 	/* XXX -- don't bother checking for proper termination (for now) */
+67,68c100,104
+< 	/* configure base64 decoder to handle data without newlines */
+< 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+---
+> 	/* process trailing data, if any */
+> 	switch (char_count)
+> 	{
+> 	  case 0:
+> 		break;
+70,71c106,122
+< 	/* decode the data */
+< 	retval = BIO_read(b64, buf, buflen);
+---
+> 	  case 1:
+> 		/* base64 decoding incomplete; at least two bits missing */
+> 		return -1;
+> 
+> 	  case 2:
+> 		if (n + 1 > buflen)
+> 			return -2;
+> 		buf[n++] = (bits >> 10);
+> 		break;
+> 
+> 	  case 3:
+> 		if (n + 2 > buflen)
+> 			return -2;
+> 		buf[n++] = (bits >> 16);
+> 		buf[n++] = ((bits >> 8) & 0xff);
+> 		break;
+> 	}
+73,79c124
+< 	/* OpenSSL returns -1 on error, convert to our error codes */
+< 	if (retval < 0)
+< 		retval = -1;  /* corrupt input */
+< 
+< 		error:
+< 		BIO_free_all(b64);
+< 	return retval;
+---
+> 	return n;
+83,94c128,139
+<  **  DKIM_BASE64_ENCODE -- encode base64 data
+<  **
+<  **  Parameters:
+<  **  	data -- data to encode
+<  **  	datalen -- bytes at "data" to encode
+<  **  	buf -- where to write the encoding
+<  **  	buflen -- bytes available at "buf"
+<  **
+<  **  Return value:
+<  **  	>= 0 -- success; number of bytes written to "buf" returned
+<  **   	-1 -- failure (not enough space at "buf" or internal error)
+<  */
+---
+> **  DKIM_BASE64_ENCODE -- encode base64 data
+> **
+> **  Parameters:
+> **  	data -- data to encode
+> **  	datalen -- bytes at "data" to encode
+> **  	buf -- where to write the encoding
+> **  	buflen -- bytes available at "buf"
+> **
+> **  Return value:
+> **  	>= 0 -- success; number of bytes written to "buf" returned
+> **   	-1 -- failure (not enough space at "buf")
+> */
+99,101c144,147
+< 	int retval = -1;
+< 	BIO *bmem;
+< 	BIO *b64;
+---
+> 	int bits;
+> 	int c;
+> 	int char_count;
+> 	size_t n;
+106,111c152,154
+< 	/* create memory BIO for output */
+< 	bmem = BIO_new(BIO_s_mem());
+< 	if (bmem == NULL)
+< 	{
+< 		return retval;
+< 	}
+---
+> 	bits = 0;
+> 	char_count = 0;
+> 	n = 0;
+113,115c156
+< 	/* create base64 encoder and chain it to memory BIO */
+< 	b64 = BIO_push(BIO_new(BIO_f_base64()), bmem);
+< 	if (b64 == bmem)
+---
+> 	for (c = 0; c < datalen; c++)
+117c158,175
+< 		goto error;
+---
+> 		bits += data[c];
+> 		char_count++;
+> 		if (char_count == 3)
+> 		{
+> 			if (n + 4 > buflen)
+> 				return -1;
+> 
+> 			buf[n++] = alphabet[bits >> 18];
+> 			buf[n++] = alphabet[(bits >> 12) & 0x3f];
+> 			buf[n++] = alphabet[(bits >> 6) & 0x3f];
+> 			buf[n++] = alphabet[bits & 0x3f];
+> 			bits = 0;
+> 			char_count = 0;
+> 		}
+> 		else
+> 		{
+> 			bits <<= 8;
+> 		}
+120,131c178
+< 	/* configure base64 encoder to generate data without newlines */
+< 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+< 
+< 	/* encode the data */
+< 	BIO_write(b64, data, datalen);
+< 	BIO_flush(b64);
+< 
+< 	/* read the encoded result */
+< 	retval = BIO_read(bmem, buf, buflen);
+< 
+< 	/* check if we read everything (no truncation) */
+< 	if (retval > 0 && BIO_eof(bmem) != 1)
+---
+> 	if (char_count != 0)
+133c180,195
+< 		retval = -1;
+---
+> 		if (n + 4 > buflen)
+> 			return -1;
+> 
+> 		bits <<= 16 - (8 * char_count);
+> 		buf[n++] = alphabet[bits >> 18];
+> 		buf[n++] = alphabet[(bits >> 12) & 0x3f];
+> 		if (char_count == 1)
+> 		{
+> 			buf[n++] = '=';
+> 			buf[n++] = '=';
+> 		}
+> 		else
+> 		{
+> 			buf[n++] = alphabet[(bits >> 6) & 0x3f];
+> 			buf[n++] = '=';
+> 		}
+136,138c198
+< 	error:
+< 	BIO_free_all(b64);
+< 	return retval;
+---
+> 	return n;
+Only in projects/opendkim/libopendkim: .deps
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim-atps.c /tmp/OpenDKIM/libopendkim/dkim-atps.c
+4,5d3
+< **
+< **  Copyright 2025 OpenDKIM Contributors.
+26d23
+< #include "dkim-tables.h"
+32a30,35
+> # ifndef SHA_DIGEST_LENGTH
+> #  define SHA_DIGEST_LENGTH 20
+> # endif /* ! SHA_DIGEST_LENGTH */
+> # ifndef SHA256_DIGEST_LENGTH
+> #  define SHA256_DIGEST_LENGTH 32
+> # endif /* ! SHA256_DIGEST_LENGTH */
+34a38
+> # include <openssl/sha.h>
+57a62,66
+> #ifdef SHA256_DIGEST_LENGTH
+> # define MAXDIGEST		MAX(SHA_DIGEST_LENGTH, SHA256_DIGEST_LENGTH)
+> #else /* SHA256_DIGEST_LENGTH */
+> # define MAXDIGEST		SHA_DIGEST_LENGTH
+> #endif /* SHA256_DIGEST_LENGTH */
+107,109d115
+< #else /* USE_GNUTLS */
+<         SHA_CTX ctx;
+< 	SHA256_CTX ctx2;
+138c144
+< 		hash = dkim_name_to_code(hashes, ahash);
+---
+> 		hash = dkim_name_to_code(dkim_table_hashes, ahash);
+144a151,155
+> 	  case DKIM_HASHTYPE_SHA1:
+> 		diglen = SHA_DIGEST_LENGTH;
+> 		break;
+> 
+> #  ifdef HAVE_SHA256
+147a159
+> #  endif /* HAVE_SHA256 */
+162a175,178
+> 		  case DKIM_HASHTYPE_SHA1:
+> 			ghash = GNUTLS_DIG_SHA1;
+> 			break;
+> 
+177,206c193,198
+<             {
+<                 EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
+<                 const EVP_MD *md_type;
+<                 unsigned int digest_len;
+< 
+<                 if (md_ctx == NULL)
+<                 {
+<                     /* handle allocation failure */
+<                     return DKIM_STAT_INTERNAL;
+<                 }
+< 
+<                 switch (hash)
+<                 {
+<                   case DKIM_HASHTYPE_SHA256:
+<                         md_type = EVP_sha256();
+<                         break;
+< 
+<                   default:
+<                         EVP_MD_CTX_free(md_ctx);
+<                         assert(0);
+<                         return DKIM_STAT_INTERNAL;
+<                 }
+< 
+<                 if (EVP_DigestInit_ex(md_ctx, md_type, NULL) != 1 ||
+<                     EVP_DigestUpdate(md_ctx, sdomain, strlen(sdomain)) != 1 ||
+<                     EVP_DigestFinal_ex(md_ctx, digest, &digest_len) != 1)
+<                 {
+<                     EVP_MD_CTX_free(md_ctx);
+<                     return DKIM_STAT_INTERNAL;
+<                 }
+---
+> 		switch (hash)
+> 		{
+> 		  case DKIM_HASHTYPE_SHA1:
+> 			(void) EVP_Digest(sdomain, strlen(sdomain), digest,
+> 			                  NULL, EVP_sha1(), NULL);
+> 			break;
+208,209c200,210
+<                 EVP_MD_CTX_free(md_ctx);
+<             }
+---
+> #  ifdef HAVE_SHA256
+> 		  case DKIM_HASHTYPE_SHA256:
+> 			(void) EVP_Digest(sdomain, strlen(sdomain), digest,
+> 			                  NULL, EVP_sha256(), NULL);
+> 			break;
+> #  endif /* HAVE_SHA256 */
+> 
+> 		  default:
+> 			assert(0);
+> 			break;
+> 		}
+276c277
+< 
+---
+>  
+371c372
+< 		else if (type == T_RRSIG)
+---
+> 		else if ((type == T_RRSIG) || (type == T_DNAME))
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim.c /tmp/OpenDKIM/libopendkim/dkim.c
+7,8d6
+< **
+< **  Copyright 2025 OpenDKIM Contributors.
+79a78
+> # include <openssl/evp.h>
+85d83
+< #include "dkim-tables.h"
+208,213d205
+< # define RSA_CLOBBER(x)	if ((x) != NULL) \
+< 			{ \
+< 				RSA_free((x)); \
+< 				(x) = NULL; \
+< 			}
+< 
+524c516
+< 	settype = dkim_code_to_name(settypes, type);
+---
+> 	settype = dkim_code_to_name(dkim_table_settypes, type);
+546d537
+< 	/* UTF-8 compatible validation): */
+549,550c540
+< 		/* Allow UTF-8 bytes per RFC 8616, but validate ASCII characters */
+< 		if (isascii(*p))
+---
+> 		if (!isascii(*p) || (!isprint(*p) && !isspace(*p)))
+552,563c542,549
+< 			/* For ASCII characters, enforce printability/whitespace rules */
+< 			if (!isprint(*p) && !isspace(*p))
+< 			{
+< 				dkim_error(dkim,
+< 						   "invalid ASCII character (0x%02x at offset %d) in %s data",
+< 						   *p, p - hcopy, settype);
+< 				if (syntax)
+< 					dkim_set_free(dkim, set);
+< 				else
+< 					set->set_bad = TRUE;
+< 				return DKIM_STAT_SYNTAX;
+< 			}
+---
+> 			dkim_error(dkim,
+> 			           "invalid character (ASCII 0x%02x at offset %d) in %s data",
+> 			           *p, p - hcopy, settype);
+> 			if (syntax)
+> 				dkim_set_free(dkim, set);
+> 			else
+> 				set->set_bad = TRUE;
+> 			return DKIM_STAT_SYNTAX;
+786,789c772
+< 		/*
+< 		 * confirm the "d=" domain name is well formed
+< 		 * UTF-8 bytes (128-255) are allowed per RFC 8616
+< 		 */
+---
+> 		/* confirm the "d=" domain name is well formed */
+793,795c776,780
+< 			unsigned char ch = (unsigned char)*p;
+< 
+< 			if (ch < 128) // ASCII character
+---
+> 			if (!(isalpha(*p) ||
+> 			      isdigit(*p) ||
+> 			      *p == '-' ||
+> 			      *p == '_' ||
+> 			      *p == '.'))
+797,809c782,787
+< 				if (!(isalpha(ch) ||
+< 				    isdigit(ch) ||
+< 				    ch == '-' ||
+< 				    ch == '_' ||
+< 				    ch == '.'))
+< 				{
+< 					dkim_error(dkim, "malformed \"d=\" tag value");
+< 					if (syntax)
+< 						dkim_set_free(dkim, set);
+< 					else
+< 						set->set_bad = TRUE;
+< 					return DKIM_STAT_SYNTAX;
+< 				}
+---
+> 				dkim_error(dkim, "malformed \"d=\" tag value");
+> 				if (syntax)
+> 					dkim_set_free(dkim, set);
+> 				else
+> 					set->set_bad = TRUE;
+> 				return DKIM_STAT_SYNTAX;
+855c833
+< 				if (dkim_name_to_code(mandatory,
+---
+> 				if (dkim_name_to_code(dkim_table_mandatory,
+1172c1150,1151
+< 	if (dkim->dkim_signalg != DKIM_SIGN_RSASHA256 &&
+---
+> 	if (dkim->dkim_signalg != DKIM_SIGN_RSASHA1 &&
+> 	    dkim->dkim_signalg != DKIM_SIGN_RSASHA256 &&
+1288,1297c1267,1268
+< 	if (dkim->dkim_signalg == DKIM_SIGN_ED25519SHA256)
+< 	{
+< 		crypto->crypto_keysize = EVP_PKEY_size(crypto->crypto_pkey) * 8;
+< 	}
+< 	else
+< 	{
+< 		crypto->crypto_keysize = EVP_PKEY_size(crypto->crypto_pkey) * 8;
+< 		crypto->crypto_key = NULL; // Mark as unused
+< 		crypto->crypto_pad = RSA_PKCS1_PADDING;
+< 	}
+---
+> 	crypto->crypto_outlen = EVP_PKEY_size(crypto->crypto_pkey);
+> 	crypto->crypto_keysize = crypto->crypto_outlen * 8;
+1299d1269
+< 	crypto->crypto_outlen = crypto->crypto_keysize / 8;
+1304c1274
+< 		           crypto->crypto_keysize / 8);
+---
+> 		           crypto->crypto_outlen);
+1498c1468
+< 				hashalg = dkim_name_to_code(hashes,
+---
+> 				hashalg = dkim_name_to_code(dkim_table_hashes,
+1557c1527
+< 				hashcode = dkim_name_to_code(hashes,
+---
+> 				hashcode = dkim_name_to_code(dkim_table_hashes,
+2098c2068
+< 			hdrcanon = dkim_name_to_code(canonicalizations, value);
+---
+> 			hdrcanon = dkim_name_to_code(dkim_table_canonicalizations, value);
+2111c2081
+< 				bodycanon = dkim_name_to_code(canonicalizations,
+---
+> 				bodycanon = dkim_name_to_code(dkim_table_canonicalizations,
+2131c2101
+< 			signalg = dkim_name_to_code(algorithms,
+---
+> 			signalg = dkim_name_to_code(dkim_table_algorithms,
+2141a2112,2115
+> 			  case DKIM_SIGN_RSASHA1:
+> 				hashtype = DKIM_HASHTYPE_SHA1;
+> 				break;
+> 
+2262c2236
+< 				q = dkim_name_to_code(querytypes, (char *) p);
+---
+> 				q = dkim_name_to_code(dkim_table_querytypes, (char *) p);
+2421c2395
+< 					pcode = dkim_name_to_code(sigparams,
+---
+> 					pcode = dkim_name_to_code(dkim_table_sigparams,
+2550c2524
+< 	                           dkim_code_to_name(algorithms,
+---
+> 	                           dkim_code_to_name(dkim_table_algorithms,
+2553c2527
+< 	                           dkim_code_to_name(canonicalizations,
+---
+> 	                           dkim_code_to_name(dkim_table_canonicalizations,
+2555c2529
+< 	                           dkim_code_to_name(canonicalizations,
+---
+> 	                           dkim_code_to_name(dkim_table_canonicalizations,
+3085c3059
+< 	else if (dkim_name_to_code(keytypes, (char *) p) == -1)
+---
+> 	else if (dkim_name_to_code(dkim_table_keytypes, (char *) p) == -1)
+3141c3115
+< 			flag = (u_int) dkim_name_to_code(keyflags, t);
+---
+> 			flag = (u_int) dkim_name_to_code(dkim_table_keyflags, t);
+3371a3346,3349
+> 	  case DKIM_SIGN_RSASHA1:
+> 		hashtype = DKIM_HASHTYPE_SHA1;
+> 		break;
+> 
+3651c3629
+< 				           dkim_code_to_name(sigerrors,
+---
+> 				           dkim_code_to_name(dkim_table_sigerrors,
+3676d3653
+< 	size_t l = 0;
+3812,3814c3789
+< 	if (!(crypto->crypto_key != NULL ||
+< 	      (sig->sig_signalg == DKIM_SIGN_ED25519SHA256 &&
+< 	       crypto->crypto_pkey != NULL)))
+---
+> 	if (crypto->crypto_pkey == NULL)
+3837a3813
+> 	  case DKIM_SIGN_RSASHA1:
+3840c3816,3817
+< 		assert(sig->sig_hashtype == DKIM_HASHTYPE_SHA256);
+---
+> 		assert(sig->sig_hashtype == DKIM_HASHTYPE_SHA1 ||
+> 		       sig->sig_hashtype == DKIM_HASHTYPE_SHA256);
+3842c3819,3821
+< 		assert(dkim_libfeature(dkim->dkim_libhandle,
+---
+> 		if (sig->sig_hashtype == DKIM_HASHTYPE_SHA256)
+> 		{
+> 			assert(dkim_libfeature(dkim->dkim_libhandle,
+3843a3823
+> 		}
+3906a3887
+> 	  case DKIM_SIGN_RSASHA1:
+3918c3899,3902
+< 		alg = GNUTLS_DIG_SHA256;
+---
+> 		if (sig->sig_signalg == DKIM_SIGN_RSASHA1)
+> 			alg = GNUTLS_DIG_SHA1;
+> 		else
+> 			alg = GNUTLS_DIG_SHA256;
+3937a3922
+> 	  case DKIM_SIGN_RSASHA1:
+3940,3957c3925,3927
+< 		  int nid;
+< 		  struct dkim_crypto *crypto;
+< 		  EVP_MD_CTX *md_ctx = NULL;
+< 		  EVP_PKEY_CTX *pkey_ctx = NULL;
+< 		  size_t siglen_tmp;
+< 
+< 		  crypto = (struct dkim_crypto *) sig->sig_signature;
+< 		  nid = NID_sha256;
+< 
+< 		  // Create and initialize the digest context
+< 		  md_ctx = EVP_MD_CTX_new();
+< 		  if (md_ctx == NULL)
+< 		  {
+< 			  dkim_load_ssl_errors(dkim, 0);
+< 			  dkim_error(dkim, "EVP_MD_CTX_new() failed");
+< 			  BIO_CLOBBER(crypto->crypto_keydata);
+< 			  return DKIM_STAT_INTERNAL;
+< 		  }
+---
+> 		struct dkim_crypto *crypto;
+> 		EVP_PKEY_CTX *pkey_ctx;
+> 		const EVP_MD *md;
+3959,3969c3929
+< 		  // Initialize for signing
+< 		  status = EVP_DigestSignInit(md_ctx, &pkey_ctx, EVP_get_digestbynid(nid),
+< 									  NULL, crypto->crypto_pkey);
+< 		  if (status != 1)
+< 		  {
+< 			  dkim_load_ssl_errors(dkim, 0);
+< 			  dkim_error(dkim, "EVP_DigestSignInit() failed");
+< 			  EVP_MD_CTX_free(md_ctx);
+< 			  BIO_CLOBBER(crypto->crypto_keydata);
+< 			  return DKIM_STAT_INTERNAL;
+< 		  }
+---
+> 		crypto = (struct dkim_crypto *) sig->sig_signature;
+3971,3979c3931
+< 		  // Set RSA padding mode
+< 		  if (EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, RSA_PKCS1_PADDING) <= 0)
+< 		  {
+< 			  dkim_load_ssl_errors(dkim, 0);
+< 			  dkim_error(dkim, "EVP_PKEY_CTX_set_rsa_padding() failed");
+< 			  EVP_MD_CTX_free(md_ctx);
+< 			  BIO_CLOBBER(crypto->crypto_keydata);
+< 			  return DKIM_STAT_INTERNAL;
+< 		  }
+---
+> 		pkey_ctx = EVP_PKEY_CTX_new(crypto->crypto_pkey, NULL);
+3981,3984c3933,3938
+< 		  // Create the signature
+< 		  siglen_tmp = crypto->crypto_outlen;
+< 		  status = EVP_DigestSign(md_ctx, crypto->crypto_out, &siglen_tmp,
+< 								  digest, diglen);
+---
+> 		if (pkey_ctx == NULL)
+> 		{
+> 			dkim_error(dkim, "failed to allocate EVP_PKEY context");
+> 			BIO_CLOBBER(crypto->crypto_keydata);
+> 			return DKIM_STAT_NORESOURCE;
+> 		}
+3986,3995c3940,3958
+< 		  if (status != 1 || siglen_tmp == 0)
+< 		  {
+< 			  dkim_load_ssl_errors(dkim, 0);
+< 			  dkim_error(dkim,
+< 						 "signature generation failed (status %d, length %zu)",
+< 						 status, siglen_tmp);
+< 			  EVP_MD_CTX_free(md_ctx);
+< 			  BIO_CLOBBER(crypto->crypto_keydata);
+< 			  return DKIM_STAT_INTERNAL;
+< 		  }
+---
+> 		if (EVP_PKEY_sign_init(pkey_ctx) <= 0)
+> 		{
+> 			dkim_load_ssl_errors(dkim, 0);
+> 			dkim_error(dkim,
+> 			           "failed to initialize EVP_PKEY context");
+> 
+> 			EVP_PKEY_CTX_free(pkey_ctx);
+> 			BIO_CLOBBER(crypto->crypto_keydata);
+> 
+> 			return DKIM_STAT_INTERNAL;
+> 		}
+> 
+> 		if (EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, RSA_PKCS1_PADDING) <= 0)
+> 		{
+> 			dkim_load_ssl_errors(dkim, 0);
+> 			dkim_error(dkim, "failed to set RSA padding mode");
+> 
+> 			EVP_PKEY_CTX_free(pkey_ctx);
+> 			BIO_CLOBBER(crypto->crypto_keydata);
+3997,3998c3960,3979
+< 		  // Clean up the context
+< 		  EVP_MD_CTX_free(md_ctx);
+---
+> 			return DKIM_STAT_INTERNAL;
+> 		}
+> 
+> 		md = EVP_sha1();
+> 
+> 		if (dkim_libfeature(dkim->dkim_libhandle,
+> 		                    DKIM_FEATURE_SHA256) &&
+> 		    sig->sig_hashtype == DKIM_HASHTYPE_SHA256)
+> 			md = EVP_sha256();
+> 
+> 		if (EVP_PKEY_CTX_set_signature_md(pkey_ctx, md) <= 0)
+> 		{
+> 			dkim_load_ssl_errors(dkim, 0);
+> 			dkim_error(dkim, "failed to set message digest type");
+> 
+> 			EVP_PKEY_CTX_free(pkey_ctx);
+> 			BIO_CLOBBER(crypto->crypto_keydata);
+> 
+> 			return DKIM_STAT_INTERNAL;
+> 		}
+4000,4005c3981,4002
+< 		  // Update output length and set pointers
+< 		  l = (unsigned int) siglen_tmp;
+< 		  crypto->crypto_outlen = l;
+< 		  signature = crypto->crypto_out;
+< 		  siglen = crypto->crypto_outlen;
+< 		  break;
+---
+> 		status = EVP_PKEY_sign(pkey_ctx, crypto->crypto_out,
+> 		                       &crypto->crypto_outlen, digest, diglen);
+> 
+> 		if (status != 1 || crypto->crypto_outlen == 0)
+> 		{
+> 			dkim_load_ssl_errors(dkim, 0);
+> 			dkim_error(dkim,
+> 			           "signature generation failed (status %d, length %d)",
+> 			           status, crypto->crypto_outlen);
+> 
+> 			EVP_PKEY_CTX_free(pkey_ctx);
+> 			BIO_CLOBBER(crypto->crypto_keydata);
+> 
+> 			return DKIM_STAT_INTERNAL;
+> 		}
+> 
+> 		signature = crypto->crypto_out;
+> 		siglen = crypto->crypto_outlen;
+> 
+> 		EVP_PKEY_CTX_free(pkey_ctx);
+> 
+> 		break;
+4022a4020,4021
+> 			BIO_CLOBBER(crypto->crypto_keydata);
+> 
+4030,4032c4029,4031
+< 			l = crypto->crypto_outlen;
+< 			status = EVP_DigestSign(md_ctx, crypto->crypto_out, &l,
+< 		                                digest, diglen);
+---
+> 			status = EVP_DigestSign(md_ctx, crypto->crypto_out,
+> 			                        &crypto->crypto_outlen, digest,
+> 			                        diglen);
+4040c4039,4040
+< 			           status, l, ERR_error_string(ERR_get_error(), NULL));
+---
+> 			           status, crypto->crypto_outlen,
+> 			           ERR_error_string(ERR_get_error(), NULL));
+4042c4042
+< 			EVP_MD_CTX_free(md_ctx);
+---
+> 			BIO_CLOBBER(crypto->crypto_keydata);
+4047,4048d4046
+< 		crypto->crypto_outlen = l;
+< 
+4326c4324
+< 			dkim_error(dkim, dkim_code_to_name(sigerrors,
+---
+> 			dkim_error(dkim, dkim_code_to_name(dkim_table_sigerrors,
+4570a4569
+> #ifdef HAVE_SHA256
+4571a4571
+> #endif /* HAVE_SHA256 */
+5275,5276c5275,5277
+< 	       signalg == DKIM_SIGN_RSASHA256 ||
+<            signalg == DKIM_SIGN_ED25519SHA256);
+---
+> 	       signalg == DKIM_SIGN_RSASHA1 ||
+>                signalg == DKIM_SIGN_RSASHA256 ||
+>                signalg == DKIM_SIGN_ED25519SHA256);
+5279,5310d5279
+< 	/* Auto-detect Ed25519 keys when signalg is DKIM_SIGN_DEFAULT */
+< 	if (signalg == DKIM_SIGN_DEFAULT)
+< 	{
+< 		BIO *keybio;
+< 		EVP_PKEY *pkey = NULL;
+< 
+< 		/* Try to load the key to check its type */
+< 		keybio = BIO_new_mem_buf((void *) secretkey, -1);
+< 		if (keybio != NULL)
+< 		{
+< 			if (strncmp((char *) secretkey, "-----", 5) == 0)
+< 			{
+< 				/* PEM format */
+< 				pkey = PEM_read_bio_PrivateKey(keybio, NULL, NULL, NULL);
+< 			}
+< 			else
+< 			{
+< 				/* DER format */
+< 				pkey = d2i_PrivateKey_bio(keybio, NULL);
+< 			}
+< 
+< 			if (pkey != NULL && EVP_PKEY_id(pkey) == EVP_PKEY_ED25519)
+< 			{
+< 				signalg = DKIM_SIGN_ED25519SHA256;
+< 			}
+< 
+< 			if (pkey != NULL)
+< 				EVP_PKEY_free(pkey);
+< 			BIO_free(keybio);
+< 		}
+< 	}
+< 	/* Check for non-Ed25519 key formats */
+5318,5320c5287,5294
+< 		// No SHA-1 fallback - return error
+< 		*statp = DKIM_STAT_INVALID;
+< 		return NULL;
+---
+> 		if (signalg == DKIM_SIGN_RSASHA256)
+> 		{
+> 			*statp = DKIM_STAT_INVALID;
+> 			return NULL;
+> 		}
+> 
+> 		if (signalg == DKIM_SIGN_DEFAULT)
+> 			signalg = DKIM_SIGN_RSASHA1;
+5485a5460,5463
+> 	  case DKIM_SIGN_RSASHA1:
+> 		hashtype = DKIM_HASHTYPE_SHA1;
+> 		break;
+> 
+5595a5574,5575
+> 	EVP_PKEY_CTX *pkey_ctx;
+> 	const EVP_MD *md;
+5753c5733,5735
+< 		hash = GNUTLS_DIG_SHA256;
+---
+> 		hash = (hash && sig->sig_hashtype == DKIM_HASHTYPE_SHA256)
+> 		       ? GNUTLS_DIG_SHA256
+> 		       : GNUTLS_DIG_SHA1;
+5871a5854,5867
+> 			if (EVP_PKEY_base_id(crypto->crypto_pkey) != EVP_PKEY_RSA)
+> 			{
+> 				dkim_error(dkim,
+> 				           "s=%s d=%s: not an RSA key",
+> 				           dkim_sig_getselector(sig),
+> 				           dkim_sig_getdomain(sig));
+> 
+> 				BIO_CLOBBER(key);
+> 
+> 				sig->sig_error = DKIM_SIGERROR_KEYDECODE;
+> 
+> 				return DKIM_STAT_OK;
+> 			}
+> 
+5873c5869
+< 			crypto->crypto_pad = RSA_PKCS1_PADDING;
+---
+> 
+5876d5871
+< 			crypto->crypto_key = NULL; // Mark as unused
+5878c5873
+< 			nid = NID_sha256;
+---
+> 			pkey_ctx = EVP_PKEY_CTX_new(crypto->crypto_pkey, NULL);
+5880c5875
+< 			// Verification using EVP API
+---
+> 			if (pkey_ctx == NULL)
+5882,5883c5877,5881
+< 				EVP_MD_CTX *md_ctx = NULL;
+< 				EVP_PKEY_CTX *pkey_ctx = NULL;
+---
+> 				dkim_error(dkim,
+> 				           "failed to allocate EVP_PKEY context");
+> 				BIO_CLOBBER(key);
+> 				return DKIM_STAT_NORESOURCE;
+> 			}
+5885,5896c5883,5887
+< 				md_ctx = EVP_MD_CTX_new();
+< 				if (md_ctx == NULL)
+< 				{
+< 					dkim_sig_load_ssl_errors(dkim, sig, 0);
+< 					dkim_error(dkim,
+< 							   "s=%s d=%s: EVP_MD_CTX_new() failed",
+< 							   dkim_sig_getselector(sig),
+< 							   dkim_sig_getdomain(sig));
+< 					BIO_CLOBBER(key);
+< 					sig->sig_error = DKIM_SIGERROR_KEYDECODE;
+< 					return DKIM_STAT_OK;
+< 				}
+---
+> 			if (EVP_PKEY_verify_init(pkey_ctx) <= 0)
+> 			{
+> 				dkim_sig_load_ssl_errors(dkim, sig, 0);
+> 				dkim_error(dkim,
+> 				           "failed to initialize EVP_PKEY context");
+5898,5913c5889,5890
+< 				// Initialize for verification
+< 				int init_status = EVP_DigestVerifyInit(md_ctx, &pkey_ctx,
+< 													   EVP_get_digestbynid(nid),
+< 													   NULL, crypto->crypto_pkey);
+< 				if (init_status != 1)
+< 				{
+< 					dkim_sig_load_ssl_errors(dkim, sig, 0);
+< 					dkim_error(dkim,
+< 							   "s=%s d=%s: EVP_DigestVerifyInit() failed",
+< 							   dkim_sig_getselector(sig),
+< 							   dkim_sig_getdomain(sig));
+< 					EVP_MD_CTX_free(md_ctx);
+< 					BIO_CLOBBER(key);
+< 					sig->sig_error = DKIM_SIGERROR_KEYDECODE;
+< 					return DKIM_STAT_OK;
+< 				}
+---
+> 				EVP_PKEY_CTX_free(pkey_ctx);
+> 				BIO_CLOBBER(key);
+5915,5927c5892,5899
+< 				// Set RSA padding mode
+< 				if (EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, crypto->crypto_pad) <= 0)
+< 				{
+< 					dkim_sig_load_ssl_errors(dkim, sig, 0);
+< 					dkim_error(dkim,
+< 							   "s=%s d=%s: EVP_PKEY_CTX_set_rsa_padding() failed",
+< 							   dkim_sig_getselector(sig),
+< 							   dkim_sig_getdomain(sig));
+< 					EVP_MD_CTX_free(md_ctx);
+< 					BIO_CLOBBER(key);
+< 					sig->sig_error = DKIM_SIGERROR_KEYDECODE;
+< 					return DKIM_STAT_OK;
+< 				}
+---
+> 				return DKIM_STAT_INTERNAL;
+> 			}
+> 
+> 			if (EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, RSA_PKCS1_PADDING) <= 0)
+> 			{
+> 				dkim_sig_load_ssl_errors(dkim, sig, 0);
+> 				dkim_error(dkim,
+> 				           "failed to set RSA padding mode");
+5929,5931c5901,5902
+< 				// Perform the verification
+< 				vstat = EVP_DigestVerify(md_ctx, crypto->crypto_in, crypto->crypto_inlen,
+< 										 digest, diglen);
+---
+> 				EVP_PKEY_CTX_free(pkey_ctx);
+> 				BIO_CLOBBER(key);
+5933,5934c5904
+< 				// Clean up the context
+< 				EVP_MD_CTX_free(md_ctx);
+---
+> 				return DKIM_STAT_INTERNAL;
+5935a5906,5930
+> 
+> 			md = EVP_sha1();
+> 
+> 			if (dkim_libfeature(dkim->dkim_libhandle,
+> 			                    DKIM_FEATURE_SHA256) &&
+> 			    sig->sig_hashtype == DKIM_HASHTYPE_SHA256)
+> 				md = EVP_sha256();
+> 
+> 			if (EVP_PKEY_CTX_set_signature_md(pkey_ctx, md) <= 0)
+> 			{
+> 				dkim_sig_load_ssl_errors(dkim, sig, 0);
+> 				dkim_error(dkim,
+> 				           "failed to set message digest type");
+> 
+> 				EVP_PKEY_CTX_free(pkey_ctx);
+> 				BIO_CLOBBER(key);
+> 
+> 				return DKIM_STAT_INTERNAL;
+> 			}
+> 
+> 			vstat = EVP_PKEY_verify(pkey_ctx, crypto->crypto_in,
+> 			                        crypto->crypto_inlen, digest,
+> 			                        diglen);
+> 
+> 			EVP_PKEY_CTX_free(pkey_ctx);
+5938a5934
+> 
+5939a5936
+> 
+5941,5942c5938
+< 		EVP_PKEY_free(crypto->crypto_pkey);
+< 		crypto->crypto_pkey = NULL;
+---
+> 		EVP_CLOBBER(crypto->crypto_pkey);
+6522,6524c6518
+< 	/* enforce RFC 5322, Section 2.2
+< 	 * Updated in 2025 to allow UTF-8 according to RFC 8616
+< 	 */
+---
+> 	/* enforce RFC 5322, Section 2.2 */
+6528,6529d6521
+< 		unsigned char ch = (unsigned char)hdr[c];  // Force unsigned
+< 
+6532,6533c6524,6529
+< 			/* Field names must be ASCII */
+< 			if (ch < 32 || ch > 126)
+---
+> 			/*
+> 			**  Field names are printable ASCII; also tolerate
+> 			**  plain whitespace.
+> 			*/
+> 
+> 			if (hdr[c] < 32 || hdr[c] > 126)
+6534a6531
+> 
+6536c6533
+< 			if (ch == ':')
+---
+> 			if (hdr[c] == ':')
+6541,6550c6538,6543
+< 			/* Field bodies: Allow UTF-8 bytes per RFC 8616, validate ASCII */
+< 			if (ch < 128) // ASCII character
+< 			{
+< 				/* ASCII validation: printable ASCII, SP, HT, CR, LF */
+< 				if (ch != 9 &&   /* HT */
+< 					ch != 10 &&  /* LF */
+< 					ch != 13 &&  /* CR */
+< 					(ch < 32 || ch > 126)) /* Outside printable range */
+< 					return DKIM_STAT_SYNTAX;
+< 			}
+---
+> 			/* field bodies are printable ASCII, SP, HT, CR, LF */
+> 			if (!(hdr[c] != 9 ||  /* HT */
+> 			      hdr[c] != 10 || /* LF */
+> 			      hdr[c] != 13 || /* CR */
+> 			      (hdr[c] >= 32 && hdr[c] <= 126) /* SP, print */ ))
+> 				return DKIM_STAT_SYNTAX;
+7641a7635
+> 		  case DKIM_HASHTYPE_SHA1:
+7658a7653
+> 		  case DKIM_HASHTYPE_SHA1:
+7661c7656
+< 			struct dkim_hash *hash;
+---
+> 			struct dkim_sha *sha;
+7663c7658
+< 			hash = (struct dkim_hash *) sig->sig_hdrcanon->canon_hash;
+---
+> 			sha = (struct dkim_sha *) sig->sig_hdrcanon->canon_hash;
+7665c7660
+< 				*hfd = hash->hash_tmpfd;
+---
+> 				*hfd = sha->sha_tmpfd;
+7669,7670c7664,7665
+< 				hash = (struct dkim_hash *) sig->sig_bodycanon->canon_hash;
+< 				*bfd = hash->hash_tmpfd;
+---
+> 				sha = (struct dkim_sha *) sig->sig_bodycanon->canon_hash;
+> 				*bfd = sha->sha_tmpfd;
+8196c8191
+< 	return dkim_code_to_name(results, result);
+---
+> 	return dkim_code_to_name(dkim_table_results, result);
+8529c8524
+< 	return (unsigned char *) dkim_code_to_name(algorithms,
+---
+> 	return (unsigned char *) dkim_code_to_name(dkim_table_algorithms,
+8589c8584
+< 	return dkim_code_to_name(sigerrors, sigerr);
+---
+> 	return dkim_code_to_name(dkim_table_sigerrors, sigerr);
+9503c9498
+< 	pcode = dkim_name_to_code(sigparams, tag);
+---
+> 	pcode = dkim_name_to_code(dkim_table_sigparams, tag);
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim-canon.c /tmp/OpenDKIM/libopendkim/dkim-canon.c
+92a93
+> 		  case DKIM_HASHTYPE_SHA1:
+116a118
+> 		  case DKIM_HASHTYPE_SHA1:
+119c121
+< 			struct dkim_hash *hash;
+---
+> 			struct dkim_sha *sha;
+121c123
+< 			hash = (struct dkim_hash *) canon->canon_hash;
+---
+> 			sha = (struct dkim_sha *) canon->canon_hash;
+123c125
+< 			if (hash->hash_tmpbio != NULL)
+---
+> 			if (sha->sha_tmpbio != NULL)
+125,127c127,129
+< 				BIO_free(hash->hash_tmpbio);
+< 				hash->hash_tmpfd = -1;
+< 				hash->hash_tmpbio = NULL;
+---
+> 				BIO_free(sha->sha_tmpbio);
+> 				sha->sha_tmpfd = -1;
+> 				sha->sha_tmpbio = NULL;
+130,132c132,136
+< 			/* Add EVP context cleanup */
+< 			if (hash->hash_ctx != NULL)
+< 				EVP_MD_CTX_free(hash->hash_ctx);
+---
+> 			if (sha->sha_ctx != NULL)
+> 			{
+> 				EVP_MD_CTX_free(sha->sha_ctx);
+> 				sha->sha_ctx = NULL;
+> 			}
+188a193
+> 	  case DKIM_HASHTYPE_SHA1:
+202a208
+> 	  case DKIM_HASHTYPE_SHA1:
+205c211
+< 		struct dkim_hash *hash;
+---
+> 		struct dkim_sha *sha;
+207,209c213,214
+< 		hash = (struct dkim_hash *) canon->canon_hash;
+< 		/* Replace SHA256_Update with EVP_DigestUpdate */
+< 		EVP_DigestUpdate(hash->hash_ctx, buf, buflen);
+---
+> 		sha = (struct dkim_sha *) canon->canon_hash;
+> 		EVP_DigestUpdate(sha->sha_ctx, buf, buflen);
+211,212c216,217
+< 		if (hash->hash_tmpbio != NULL)
+< 			BIO_write(hash->hash_tmpbio, buf, buflen);
+---
+> 		if (sha->sha_tmpbio != NULL)
+> 			BIO_write(sha->sha_tmpbio, buf, buflen);
+618a624
+> 		  case DKIM_HASHTYPE_SHA1:
+637c643,650
+< 			(void) gnutls_hash_init(&sha->sha_hd,
+---
+> 			if (cur->canon_hashtype == DKIM_HASHTYPE_SHA1)
+> 			{
+> 				(void) gnutls_hash_init(&sha->sha_hd,
+> 				                        GNUTLS_DIG_SHA1);
+> 			}
+> 			else
+> 			{
+> 				(void) gnutls_hash_init(&sha->sha_hd,
+638a652
+> 			}
+662a677
+> 		  case DKIM_HASHTYPE_SHA1:
+665c680
+< 			struct dkim_hash *hash;
+---
+> 			struct dkim_sha *sha;
+667,669c682,684
+< 			hash = (struct dkim_hash *) DKIM_MALLOC(dkim,
+< 			                                            sizeof(struct dkim_hash));
+< 			if (hash == NULL)
+---
+> 			sha = (struct dkim_sha *) DKIM_MALLOC(dkim,
+> 			                                      sizeof(struct dkim_sha));
+> 			if (sha == NULL)
+673c688
+< 				           sizeof(struct dkim_hash));
+---
+> 				           sizeof(struct dkim_sha));
+677c692
+< 			memset(hash, '\0', sizeof(struct dkim_hash));
+---
+> 			memset(sha, '\0', sizeof(struct dkim_sha));
+679,687c694,703
+< 			/* Replace SHA256_Init with EVP initialization */
+< 			hash->hash_ctx = EVP_MD_CTX_new();
+< 			if (hash->hash_ctx == NULL ||
+< 			    EVP_DigestInit_ex(hash->hash_ctx, EVP_sha256(), NULL) != 1)
+< 			{
+< 				if (hash->hash_ctx != NULL)
+< 					EVP_MD_CTX_free(hash->hash_ctx);
+< 				DKIM_FREE(dkim, hash);
+< 				return DKIM_STAT_NORESOURCE;
+---
+> 			sha->sha_ctx = EVP_MD_CTX_new();
+> 			if (cur->canon_hashtype == DKIM_HASHTYPE_SHA1)
+> 			{
+> 				(void) EVP_DigestInit_ex(sha->sha_ctx,
+> 				                         EVP_sha1(), NULL);
+> 			}
+> 			else
+> 			{
+> 				(void) EVP_DigestInit_ex(sha->sha_ctx,
+> 				                         EVP_sha256(), NULL);
+695,696c711
+< 					EVP_MD_CTX_free(hash->hash_ctx);
+< 					DKIM_FREE(dkim, hash);
+---
+> 					DKIM_FREE(dkim, sha);
+700,701c715,716
+< 				hash->hash_tmpfd = fd;
+< 				hash->hash_tmpbio = BIO_new_fd(fd, 1);
+---
+> 				sha->sha_tmpfd = fd;
+> 				sha->sha_tmpbio = BIO_new_fd(fd, 1);
+704,705c719,721
+< 			cur->canon_hash = hash;
+< 			break;
+---
+> 			cur->canon_hash = sha;
+> 
+> 		  	break;
+786c802,810
+< 	assert(hashtype == DKIM_HASHTYPE_SHA256);
+---
+> 	if (dkim_libfeature(dkim->dkim_libhandle, DKIM_FEATURE_SHA256))
+> 	{
+> 		assert(hashtype == DKIM_HASHTYPE_SHA1 ||
+> 		       hashtype == DKIM_HASHTYPE_SHA256);
+> 	}
+> 	else
+> 	{
+> 		assert(hashtype == DKIM_HASHTYPE_SHA1);
+> 	}
+1318a1343
+> 		  case DKIM_HASHTYPE_SHA1:
+1326c1351,1354
+< 			alg = GNUTLS_DIG_SHA256;
+---
+> 			if (cur->canon_hashtype == DKIM_HASHTYPE_SHA1)
+> 				alg = GNUTLS_DIG_SHA1;
+> 			else
+> 				alg = GNUTLS_DIG_SHA256;
+1343a1372
+> 		  case DKIM_HASHTYPE_SHA1:
+1346,1347c1375
+< 			struct dkim_hash *hash;
+< 			unsigned int len;
+---
+> 			struct dkim_sha *sha;
+1349,1350c1377,1379
+< 			hash = (struct dkim_hash *) cur->canon_hash;
+< 			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &len);
+---
+> 			sha = (struct dkim_sha *) cur->canon_hash;
+> 			EVP_DigestFinal_ex(sha->sha_ctx, sha->sha_out,
+> 			                   &sha->sha_outlen);
+1352,1353c1381,1382
+< 			if (hash->hash_tmpbio != NULL)
+< 				(void) BIO_flush(hash->hash_tmpbio);
+---
+> 			if (sha->sha_tmpbio != NULL)
+> 				(void) BIO_flush(sha->sha_tmpbio);
+1433a1463
+> 		  case DKIM_HASHTYPE_SHA1:
+1441c1471,1474
+< 			alg = GNUTLS_DIG_SHA256;
+---
+> 			if (cur->canon_hashtype == DKIM_HASHTYPE_SHA1)
+> 				alg = GNUTLS_DIG_SHA1;
+> 			else
+> 				alg = GNUTLS_DIG_SHA256;
+1462a1496
+> 
+1463a1498
+> 		  case DKIM_HASHTYPE_SHA1:
+1466,1467c1501
+< 			struct dkim_hash *hash;
+< 			unsigned int len;
+---
+> 			struct dkim_sha *sha;
+1469,1470c1503,1505
+< 			hash = (struct dkim_hash *) cur->canon_hash;
+< 			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &len);
+---
+> 			sha = (struct dkim_sha *) cur->canon_hash;
+> 			EVP_DigestFinal_ex(sha->sha_ctx, sha->sha_out,
+> 			                   &sha->sha_outlen);
+1472,1473c1507,1508
+< 			if (hash->hash_tmpbio != NULL)
+< 				(void) BIO_flush(hash->hash_tmpbio);
+---
+> 			if (sha->sha_tmpbio != NULL)
+> 				(void) BIO_flush(sha->sha_tmpbio);
+1854a1890
+> 		  case DKIM_HASHTYPE_SHA1:
+1863c1899,1902
+< 			alg = GNUTLS_DIG_SHA256;
+---
+> 			if (cur->canon_hashtype == DKIM_HASHTYPE_SHA1)
+> 				alg = GNUTLS_DIG_SHA1;
+> 			else
+> 				alg = GNUTLS_DIG_SHA256;
+1880a1920
+> 		  case DKIM_HASHTYPE_SHA1:
+1883,1884c1923
+< 			struct dkim_hash *hash;
+< 			unsigned int len;
+---
+> 			struct dkim_sha *sha;
+1886,1887c1925,1927
+< 			hash = (struct dkim_hash *) cur->canon_hash;
+< 			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &len);
+---
+> 			sha = (struct dkim_sha *) cur->canon_hash;
+> 			EVP_DigestFinal_ex(sha->sha_ctx, sha->sha_out,
+> 			                   &sha->sha_outlen);
+1889,1890c1929,1930
+< 			if (hash->hash_tmpbio != NULL)
+< 				(void) BIO_flush(hash->hash_tmpbio);
+---
+> 			if (sha->sha_tmpbio != NULL)
+> 				(void) BIO_flush(sha->sha_tmpbio);
+1931a1972
+> 	  case DKIM_HASHTYPE_SHA1:
+1942a1984
+> 	  case DKIM_HASHTYPE_SHA1:
+1945c1987
+< 		struct dkim_hash *hash;
+---
+> 		struct dkim_sha *sha;
+1947,1949c1989,1991
+< 		hash = (struct dkim_hash *) canon->canon_hash;
+< 		*digest = hash->hash_out;
+< 		*dlen = sizeof hash->hash_out;
+---
+> 		sha = (struct dkim_sha *) canon->canon_hash;
+> 		*digest = sha->sha_out;
+> 		*dlen = sha->sha_outlen;
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim.h /tmp/OpenDKIM/libopendkim/dkim.h
+37c37
+< #define	OPENDKIM_LIB_VERSION	0x03000000
+---
+> #define	OPENDKIM_LIB_VERSION	0x020B0000
+67a68,74
+> **  DKIM_NAMETABLE -- tables for conversion between code and name
+> */
+> 
+> struct dkim_nametable;
+> typedef struct dkim_nametable DKIM_NAMETABLE;
+> 
+> /*
+90a98,100
+> #define	DKIM_STAT_ITER_EOT	18	/* the table has no more item */
+> 
+> extern DKIM_NAMETABLE *dkim_table_results;
+161a172,173
+> extern DKIM_NAMETABLE *dkim_table_sigerrors;
+> 
+178a191,192
+> extern DKIM_NAMETABLE *dkim_table_canonicalizations;
+> 
+183,185d196
+< **
+< **    NOTE: RSASHA1 (was option 0) has been removed for security reasons.
+< **        Numbering preserved for compatibility.
+191a203
+> #define DKIM_SIGN_RSASHA1	0	/* an RSA-signed SHA1 digest */
+194a207,208
+> extern DKIM_NAMETABLE *dkim_table_algorithms;
+> 
+204a219,220
+> extern DKIM_NAMETABLE *dkim_table_querytypes;
+> 
+228a245,246
+> extern DKIM_NAMETABLE *dkim_table_sigparams;
+> 
+338a357,358
+> extern DKIM_NAMETABLE *dkim_table_keyflags;
+> 
+360a381,387
+> **  DKIM_ITER -- iteration on conversion tables
+> */
+> 
+> struct dkim_iter_ctx; 	/* table iteration context */
+> typedef struct dkim_iter_ctx DKIM_ITER_CTX;
+> 
+> /*
+443,446d469
+< 
+< /* Function prototype for domain conversion */
+< extern DKIM_STAT dkim_convert_domain __P((const char *input, char **output));
+< 
+1432a1456,1479
+> **  DKIM_TEST_KEY2 -- retrieve a public key and verify it against a provided
+> **                    private key
+> **
+> **  Parameters:
+> **  	lib -- DKIM library handle
+> **  	selector -- selector
+> **  	domain -- domain name
+> **  	key -- private key to verify (PEM format)
+> **  	keylen -- size of private key
+> **  	alg -- signing algorithm
+> **  	dnssec -- DNSSEC result (may be NULL)
+> **  	err -- error buffer (may be NULL)
+> **  	errlen -- size of error buffer
+> **
+> **  Return value:
+> **  	1 -- keys don't match
+> **  	0 -- keys match (or no key provided)
+> **  	-1 -- error
+> */
+> 
+> extern int dkim_test_key2 __P((DKIM_LIB *, char *, char *, char *, size_t,
+>                                dkim_alg_t, int *, char *, size_t));
+> 
+> /*
+1948a1996,2073
+> 
+> /*
+> **  DKIM_CODE_TO_NAME -- translate a mnemonic code to its name
+> **
+> **  Parameters:
+> **  	tbl -- name table
+> **  	code -- code to translate
+> **
+> **  Return value:
+> **  	Pointer to the name matching the provided code, or NULL if not found.
+> */
+> 
+> extern const char *dkim_code_to_name __P((DKIM_NAMETABLE *tbl,
+>                                           const int code));
+> 
+> /*
+> **  DKIM_NAME_TO_CODE -- translate a name to a mnemonic code
+> **
+> **  Parameters:
+> **  	tbl -- name table
+> **  	name -- name to translate
+> **
+> **  Return value:
+> **  	A mnemonic code matching the provided name, or -1 if not found.
+> */
+> 
+> extern const int dkim_name_to_code __P((DKIM_NAMETABLE *tbl,
+>                                         const char *name));
+> 
+> /*
+> **  DKIM_NAMETABLE_FIRST -- get the first entry of the table and start iteration
+> **
+> **  Parameters:
+> **  	tbl -- name table
+> **  	ctx -- iteration context (returned)
+> **  	name -- name in the first item in the table (returned)
+> **  	code -- code in the first item in the table (returned)
+> **
+> **  Return value:
+> **  	A DKIM_STAT_OK         -- retrieve the first item successfully
+> **  	A DKIM_STAT_ITER_EOT   -- the table has no item.
+> **  	A DKIM_STAT_NORESOURCE -- cannot allocate memory for the
+> ** 	                          iteration context
+> **
+> */
+> extern DKIM_STAT dkim_nametable_first __P((DKIM_NAMETABLE *tbl,
+>                                            DKIM_ITER_CTX **ctx,
+>                                            const char **name, int *code));
+> 
+> /*
+> **  DKIM_NAMETABLE_NEXT -- get the next entry on the iteration the table
+> **
+> **  Parameters:
+> **  	ctx -- iteration context (updated)
+> **  	name -- name in the first item in the table (returned)
+> **  	code -- code in the first item in the table (returned)
+> **
+> **  Return value:
+> **  	A DKIM_STAT_OK         -- retrieve the first item successfully
+> **  	A DKIM_STAT_ITER_EOT   -- the table has no item.
+> **
+> */
+> extern DKIM_STAT dkim_nametable_next __P((DKIM_ITER_CTX *ctx,
+>                                           const char **name,
+>                                           int *code));
+> 
+> /*
+> **  DKIM_ITER_CTX_FREE -- release resources associated with
+> **                                  a nametable iteration context
+> **
+> **  Parameters:
+> **  	ctx -- iteration context
+> **
+> **  Return value:
+> **  	None.
+> **
+> */
+> extern DKIM_STAT dkim_iter_ctx_free __P((DKIM_ITER_CTX *ctx));
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim-internal.h /tmp/OpenDKIM/libopendkim/dkim-internal.h
+50,53d49
+< #ifdef HAVE_LIBIDN2
+< # include <idn2.h>
+< #endif /* HAVE_LIBIDN2 */
+< 
+103a100,101
+> extern DKIM_NAMETABLE *dkim_table_keyparams;
+> 
+114a113,114
+> extern DKIM_NAMETABLE *dkim_table_settypes;
+> 
+119a120
+> #define DKIM_HASHTYPE_SHA1	0
+121a123,124
+> extern DKIM_NAMETABLE *dkim_table_hashes;
+> 
+129a133,134
+> extern DKIM_NAMETABLE *dkim_table_keytypes;
+> 
+156a162,170
+> 
+> 
+> #ifdef _FFR_CONDITIONAL
+> 
+> /*
+> **  mandatory DKIM tags
+> */
+> extern DKIM_NAMETABLE *dkim_table_mandatory;
+> #endif /* _FFR_CONDITIONAL */
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim-keys.c /tmp/OpenDKIM/libopendkim/dkim-keys.c
+57,119d56
+<  * *  DKIM_CONVERT_DOMAIN_FOR_DNS -- helper function to convert UTF-8 domains for DNS
+<  **
+<  **  Parameters:
+<  **      dkim -- DKIM handle for error reporting
+<  **      domain -- domain to convert (UTF-8 or ASCII)
+<  **      ascii_out -- pointer to store ASCII domain (caller must free)
+<  **
+<  **  Return value:
+<  **      DKIM_STAT_OK -- success
+<  **      DKIM_STAT_SYNTAX -- conversion failed
+<  **      DKIM_STAT_INTERNAL -- memory allocation failed
+<  **
+<  **  Notes:
+<  **      Internal helper that checks if conversion is needed and performs it
+<  */
+< 
+< static DKIM_STAT
+< dkim_convert_domain_for_dns(DKIM *dkim, const char *domain, char **ascii_out)
+< {
+< 	const char *p;
+< 	_Bool has_utf8 = FALSE;
+< 
+< 	assert(dkim != NULL);
+< 	assert(domain != NULL);
+< 	assert(ascii_out != NULL);
+< 
+< 	*ascii_out = NULL;
+< 
+< 	/* Check if domain contains UTF-8 characters */
+< 	for (p = domain; *p != '\0'; p++)
+< 	{
+< 		if (!isascii(*p))
+< 		{
+< 			has_utf8 = TRUE;
+< 			break;
+< 		}
+< 	}
+< 
+< 	if (has_utf8)
+< 	{
+< 		/* Convert UTF-8 domain to ASCII */
+< 		DKIM_STAT result = dkim_convert_domain(domain, ascii_out);
+< 		if (result != DKIM_STAT_OK)
+< 		{
+< 			dkim_error(dkim, "failed to convert UTF-8 domain '%s' for DNS lookup", domain);
+< 			return result;
+< 		}
+< 	}
+< 	else
+< 	{
+< 		/* ASCII domain - just duplicate it */
+< 		*ascii_out = strdup(domain);
+< 		if (*ascii_out == NULL)
+< 		{
+< 			dkim_error(dkim, "unable to allocate memory for domain copy");
+< 			return DKIM_STAT_INTERNAL;
+< 		}
+< 	}
+< 
+< 	return DKIM_STAT_OK;
+< }
+< 
+< /*
+169,189d105
+< 	/* Convert UTF-8 domain and selector to ASCII for DNS lookup */
+< 	char *ascii_domain = NULL;
+< 	char *ascii_selector = NULL;
+< 	DKIM_STAT conv_result;
+< 
+< 	conv_result = dkim_convert_domain((char *)sig->sig_domain, &ascii_domain);
+< 	if (conv_result != DKIM_STAT_OK)
+< 	{
+< 		dkim_error(dkim, "failed to convert UTF-8 domain for DNS lookup");
+< 		return conv_result;
+< 	}
+< 
+< 	conv_result = dkim_convert_domain((char *)sig->sig_selector, &ascii_selector);
+< 	if (conv_result != DKIM_STAT_OK)
+< 	{
+< 		free(ascii_domain);
+< 		dkim_error(dkim, "failed to convert UTF-8 selector for DNS lookup");
+< 		return conv_result;
+< 	}
+< 
+< 	/* Build DNS query name using ASCII components */
+191,196c107
+< 				 ascii_selector, DKIM_DNSKEYNAME, ascii_domain);
+< 
+< 	/* Clean up converted domains */
+< 	free(ascii_domain);
+< 	free(ascii_selector);
+< 
+---
+> 	             sig->sig_selector, DKIM_DNSKEYNAME, sig->sig_domain);
+416c327
+< 		else if (type == T_RRSIG)
+---
+> 		else if ((type == T_RRSIG) || (type == T_DNAME))
+549,578c460,461
+< 	/* Convert UTF-8 domain and selector to ASCII for file lookup */
+< 	char *ascii_domain = NULL;
+< 	char *ascii_selector = NULL;
+< 	DKIM_STAT conv_result;
+< 
+< 	conv_result = dkim_convert_domain((char *)sig->sig_domain, &ascii_domain);
+< 	if (conv_result != DKIM_STAT_OK)
+< 	{
+< 		fclose(f);
+< 		dkim_error(dkim, "failed to convert UTF-8 domain for file lookup");
+< 		return conv_result;
+< 	}
+< 
+< 	conv_result = dkim_convert_domain((char *)sig->sig_selector, &ascii_selector);
+< 	if (conv_result != DKIM_STAT_OK)
+< 	{
+< 		free(ascii_domain);
+< 		fclose(f);
+< 		dkim_error(dkim, "failed to convert UTF-8 selector for file lookup");
+< 		return conv_result;
+< 	}
+< 
+< 	/* Build key name using ASCII components */
+< 	n = snprintf(name, sizeof name, "%s.%s.%s",
+< 				 ascii_selector, DKIM_DNSKEYNAME, ascii_domain);
+< 
+< 	/* Clean up converted domains */
+< 	free(ascii_domain);
+< 	free(ascii_selector);
+< 
+---
+> 	n = snprintf(name, sizeof name, "%s.%s.%s", sig->sig_selector,
+> 	             DKIM_DNSKEYNAME, sig->sig_domain);
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim-report.c /tmp/OpenDKIM/libopendkim/dkim-report.c
+25d24
+< #include "dkim-tables.h"
+227c226
+< 		else if (type == T_RRSIG)
+---
+> 		else if ((type == T_RRSIG) || (type == T_DNAME))
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim-tables.c /tmp/OpenDKIM/libopendkim/dkim-tables.c
+7,8d6
+< **
+< **  Copyright 2025 OpenDKIM Contributors.
+14a13
+> #include <stdlib.h>
+19d17
+< #include "dkim-tables.h"
+21a20,32
+> /* structures */
+> struct dkim_nametable
+> {
+> 	const char *	tbl_name;	/* name */
+> 	const int	tbl_code;	/* code */
+> };
+> 
+> struct dkim_iter_ctx
+> {
+> 	DKIM_NAMETABLE	*current;	/* current table entry */
+> 	_Bool		is_eot;		/* It is last entry or not */
+> };
+> 
+23c34
+< static struct nametable prv_keyparams[] =	/* key parameters */
+---
+> static struct dkim_nametable prv_keyparams[] =	/* key parameters */
+33c44
+< struct nametable *keyparams = prv_keyparams;
+---
+> DKIM_NAMETABLE *dkim_table_keyparams = prv_keyparams;
+35c46
+< static struct nametable prv_keyflags[] =	/* key flags */
+---
+> static struct dkim_nametable prv_keyflags[] =	/* key flags */
+41c52
+< struct nametable *keyflags = prv_keyflags;
+---
+> DKIM_NAMETABLE *dkim_table_keyflags = prv_keyflags;
+43c54
+< static struct nametable prv_sigparams[] =	/* signature parameters */
+---
+> static struct dkim_nametable prv_sigparams[] =	/* signature parameters */
+61c72
+< struct nametable *sigparams = prv_sigparams;
+---
+> DKIM_NAMETABLE *dkim_table_sigparams = prv_sigparams;
+63c74
+< static struct nametable prv_algorithms[] =	/* signing algorithms */
+---
+> static struct dkim_nametable prv_algorithms[] =	/* signing algorithms */
+64a76
+> 	{ "rsa-sha1",		DKIM_SIGN_RSASHA1 },
+69c81
+< struct nametable *algorithms = prv_algorithms;
+---
+> DKIM_NAMETABLE *dkim_table_algorithms = prv_algorithms;
+71c83
+< static struct nametable prv_canonicalizations[] = /* canonicalizations */
+---
+> static struct dkim_nametable prv_canonicalizations[] = /* canonicalizations */
+77c89
+< struct nametable *canonicalizations = prv_canonicalizations;
+---
+> DKIM_NAMETABLE *dkim_table_canonicalizations = prv_canonicalizations;
+79c91
+< static struct nametable prv_hashes[] =		/* hashes */
+---
+> static struct dkim_nametable prv_hashes[] =		/* hashes */
+80a93
+> 	{ "sha1",	DKIM_HASHTYPE_SHA1 },
+84c97
+< struct nametable *hashes = prv_hashes;
+---
+> DKIM_NAMETABLE *dkim_table_hashes = prv_hashes;
+86c99
+< static struct nametable prv_keytypes[] =	/* key types */
+---
+> static struct dkim_nametable prv_keytypes[] =	/* key types */
+92c105
+< struct nametable *keytypes = prv_keytypes;
+---
+> DKIM_NAMETABLE *dkim_table_keytypes = prv_keytypes;
+94c107
+< static struct nametable prv_querytypes[] =	/* query types */
+---
+> static struct dkim_nametable prv_querytypes[] =	/* query types */
+99c112
+< struct nametable *querytypes = prv_querytypes;
+---
+> DKIM_NAMETABLE *dkim_table_querytypes = prv_querytypes;
+101c114
+< static struct nametable prv_results[] =		/* result codes */
+---
+> static struct dkim_nametable prv_results[] =		/* result codes */
+118a132
+> 	{ "End of the table",		DKIM_STAT_ITER_EOT },
+121c135
+< struct nametable *results = prv_results;
+---
+> DKIM_NAMETABLE *dkim_table_results = prv_results;
+123c137
+< static struct nametable prv_settypes[] =	/* set types */
+---
+> static struct dkim_nametable prv_settypes[] =	/* set types */
+130c144
+< struct nametable *settypes = prv_settypes;
+---
+> DKIM_NAMETABLE *dkim_table_settypes = prv_settypes;
+132c146
+< static struct nametable prv_sigerrors[] =	/* signature parsing errors */
+---
+> static struct dkim_nametable prv_sigerrors[] =	/* signature parsing errors */
+185c199
+< struct nametable *sigerrors = prv_sigerrors;
+---
+> DKIM_NAMETABLE *dkim_table_sigerrors = prv_sigerrors;
+188c202
+< static struct nametable prv_mandatory[] =	/* mandatory DKIM tags */
+---
+> static struct dkim_nametable prv_mandatory[] =	/* mandatory DKIM tags */
+193c207
+< struct nametable *mandatory = prv_mandatory;
+---
+> DKIM_NAMETABLE *dkim_table_mandatory = prv_mandatory;
+210c224
+< dkim_code_to_name(struct nametable *tbl, const int code)
+---
+> dkim_code_to_name(DKIM_NAMETABLE *tbl, const int code)
+238c252
+< dkim_name_to_code(struct nametable *tbl, const char *name)
+---
+> dkim_name_to_code(DKIM_NAMETABLE *tbl, const char *name)
+251a266,355
+> }
+> 
+> /*
+> **  DKIM_NAMETABLE_FIRST -- get the first entry of the table and start iteration
+> **
+> **  Parameters:
+> **  	tbl -- name table
+> **  	ctx -- iteration context (returned)
+> **  	name -- name in the first item in the table (returned)
+> **  	code -- code in the first item in the table (returned)
+> **
+> **  Return value:
+> **  	A DKIM_STAT_OK         -- retrieve the first item successfully
+> **  	A DKIM_STAT_ITER_EOT   -- the table has no item.
+> **  	A DKIM_STAT_NORESOURCE -- cannot allocate memory for the
+> ** 	                          iteration context
+> **
+> */
+> DKIM_STAT
+> dkim_nametable_first(DKIM_NAMETABLE *tbl, DKIM_ITER_CTX **ctx,
+>                  const char **name, int *code)
+> {
+> 	*ctx = (DKIM_ITER_CTX *)
+> 	       malloc(sizeof(DKIM_ITER_CTX));
+> 	if (*ctx == NULL)
+> 	{
+> 		return DKIM_STAT_NORESOURCE;
+> 	}
+> 	if (tbl->tbl_name == NULL)
+> 	{
+> 		(*ctx)->current = NULL;
+> 		(*ctx)->is_eot = TRUE;
+> 		return DKIM_STAT_ITER_EOT;
+> 	}
+> 	*name = tbl->tbl_name;
+> 	*code = tbl->tbl_code;
+> 	(*ctx)->current = tbl;
+> 	(*ctx)->is_eot = (((*ctx)->current)[1].tbl_name == NULL)? TRUE : FALSE;
+> 	return DKIM_STAT_OK;
+> }
+> 
+> /*
+> **  DKIM_NAMETABLE_NEXT -- get the next entry on the iteration the table
+> **
+> **  Parameters:
+> **  	ctx -- iteration context (updated)
+> **  	name -- name in the first item in the table (returned)
+> **  	code -- code in the first item in the table (returned)
+> **
+> **  Return value:
+> **  	A DKIM_STAT_OK         -- retrieve the first item successfully
+> **  	A DKIM_STAT_ITER_EOT   -- the table has no item.
+> **
+> */
+> DKIM_STAT
+> dkim_nametable_next(DKIM_ITER_CTX *ctx, const char **name, int *code)
+> {
+> 	if (ctx->is_eot)
+> 	{
+> 		return DKIM_STAT_ITER_EOT;
+> 	}
+> 	ctx->current++;
+> 	*name = ctx->current->tbl_name;
+> 	*code = ctx->current->tbl_code;
+> 	ctx->is_eot = ((ctx->current)[1].tbl_name == NULL)? TRUE : FALSE;
+> 	return DKIM_STAT_OK;
+> }
+> 
+> /*
+> **  DKIM_ITER_CTX_FREE -- release resources associated with
+> **                                  a nametable iteration context
+> **
+> **  Parameters:
+> **  	ctx -- iteration context
+> **
+> **  Return value:
+> **  	DKIM_STAT_OK  -- operation was successful
+> **
+> **  Note: This function is a placeholder to add some operation associated
+> **        with future changes of the structure of the tables.
+> **
+> */
+> DKIM_STAT
+> dkim_iter_ctx_free(DKIM_ITER_CTX *ctx)
+> {
+> 	if (ctx != NULL)
+> 	{
+> 		free((void *)ctx);
+> 	}
+> 	return DKIM_STAT_OK;
+Only in projects/opendkim/libopendkim: dkim-tables.h
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim-test.c /tmp/OpenDKIM/libopendkim/dkim-test.c
+7,8d6
+< **
+< **  Copyright 2025 OpenDKIM Contributors.
+31a30
+> # include <openssl/x509.h>
+271,272c270,271
+< **  DKIM_TEST_KEY -- retrieve a public key and verify it against a provided
+< **                   private key
+---
+> **  DKIM_TEST_KEY2 -- retrieve a public key and verify it against a provided
+> **                    private key
+280a280
+> **  	alg -- signing algorithm
+291,292c291,293
+< dkim_test_key(DKIM_LIB *lib, char *selector, char *domain,
+<               char *key, size_t keylen, int *dnssec, char *err, size_t errlen)
+---
+> dkim_test_key2(DKIM_LIB *lib, char *selector, char *domain,
+>                char *key, size_t keylen, dkim_alg_t alg,
+>                int *dnssec, char *err, size_t errlen)
+303a305
+> 	size_t outkey_len;
+307a310
+> 	const char *algstr;
+321,322c324,327
+< 	snprintf(buf, sizeof buf, "v=1; d=%s; s=%s; h=x; b=x; a=x",
+< 	         domain, selector);
+---
+> 	algstr = dkim_code_to_name(dkim_table_algorithms, alg);
+> 
+> 	snprintf(buf, sizeof buf, "v=1; d=%s; s=%s; h=x; b=x; a=%s",
+> 	         domain, selector, algstr);
+411a417,428
+> 		switch(alg)
+> 		{
+> 		  case DKIM_SIGN_RSASHA1:
+> 		  case DKIM_SIGN_RSASHA256:
+> 			sig->sig_keytype = DKIM_KEYTYPE_RSA;
+> 			break;
+> 		  case DKIM_SIGN_ED25519SHA256:
+> 			sig->sig_keytype = DKIM_KEYTYPE_ED25519;
+> 			break;
+> 		  default:
+> 			return -1;
+> 		}
+421c438
+< 													  NULL, NULL);
+---
+> 		                                              NULL, NULL);
+429,430c446,447
+< 						"PEM_read_bio_PrivateKey() failed",
+< 						errlen);
+---
+> 				        "PEM_read_bio_PrivateKey() failed",
+> 				        errlen);
+435,437c452
+< 		/* Detect key type and handle appropriately */
+< 		#ifdef HAVE_ED25519
+< 		if (EVP_PKEY_id(crypto->crypto_pkey) == EVP_PKEY_ED25519)
+---
+> 		if (sig->sig_keytype == DKIM_KEYTYPE_ED25519)
+439,441c454,463
+< 			sig->sig_keytype = DKIM_KEYTYPE_ED25519;
+< 			crypto->crypto_keysize = EVP_PKEY_size(crypto->crypto_pkey);
+< 			/* Don't extract RSA key for Ed25519 keys */
+---
+> 			outkey_len = sizeof(buf);
+> 			if (! EVP_PKEY_get_raw_public_key(crypto->crypto_pkey,
+> 			                                  buf, &outkey_len))
+> 			{
+> 				strlcpy(err,
+> 				        "EVP_PKEY_get_raw_public_key() failed",
+> 				        errlen);
+> 				return -1;
+> 			}
+> 			ptr = buf;
+444d465
+< 			#endif /* HAVE_ED25519 */
+446,448d466
+< 			sig->sig_keytype = DKIM_KEYTYPE_RSA;
+< 			// Modern approach - don't extract RSA key, use EVP_PKEY directly
+< 			crypto->crypto_key = NULL; // Mark as unused
+450,461d467
+< 			crypto->crypto_pad = RSA_PKCS1_PADDING;
+< 		}
+< 
+< 		outkey = BIO_new(BIO_s_mem());
+< 		if (outkey == NULL)
+< 		{
+< 			BIO_free(keybuf);
+< 			(void) dkim_free(dkim);
+< 			if (err != NULL)
+< 				strlcpy(err, "BIO_new() failed", errlen);
+< 			return -1;
+< 		}
+463,468c469,470
+< 		#ifdef HAVE_ED25519
+< 		if (sig->sig_keytype == DKIM_KEYTYPE_ED25519)
+< 		{
+< 			/* For Ed25519, export the public key directly */
+< 			status = i2d_PUBKEY_bio(outkey, crypto->crypto_pkey);
+< 			if (status == 0)
+---
+> 			outkey = BIO_new(BIO_s_mem());
+> 			if (outkey == NULL)
+471d472
+< 				BIO_free(outkey);
+474,477c475
+< 				{
+< 					strlcpy(err, "i2d_PUBKEY_bio() failed",
+< 							errlen);
+< 				}
+---
+> 					strlcpy(err, "BIO_new() failed", errlen);
+480,484c478
+< 		}
+< 		else
+< 			#endif /* HAVE_ED25519 */
+< 		{
+< 			/* RSA key handling - use modern EVP API */
+---
+> 
+493,495c487,488
+< 					/* Updated error message to reflect modern API */
+< 					strlcpy(err, "i2d_PUBKEY_bio() failed",
+< 							errlen);
+---
+> 					strlcpy(err, "i2d_RSA_PUBKEY_bio() failed",
+> 					        errlen);
+499c492
+< 		}
+---
+> 			(void) BIO_get_mem_data(outkey, &ptr);
+501c494
+< 		(void) BIO_get_mem_data(outkey, &ptr);
+---
+> 			outkey_len = BIO_number_written(outkey);
+503,509c496
+< 		#ifdef HAVE_ED25519
+< 		if (sig->sig_keytype == DKIM_KEYTYPE_ED25519)
+< 		{
+< 			/* For Ed25519, strip the fixed 12-byte ASN.1 prefix
+< 			 * The prefix is always 12 bytes, raw key is always 32 bytes */
+< 			int der_len = BIO_number_written(outkey);
+< 			unsigned char *der_data = (unsigned char *) ptr;
+---
+> 		}
+511,518c498,501
+< 			/* Ed25519 DER should be exactly 44 bytes (12 prefix + 32 key) */
+< 			if (der_len == 44 && sig->sig_keylen == 32)
+< 			{
+< 				/* Skip the 12-byte ASN.1 prefix to get the raw 32-byte key */
+< 				unsigned char *raw_key = der_data + 12;
+< 				status = memcmp(raw_key, sig->sig_key, 32);
+< 			}
+< 			else
+---
+> 		if (outkey_len == sig->sig_keylen)
+> 		{
+> 			status = memcmp(ptr, sig->sig_key, sig->sig_keylen);
+> 			if (status != 0)
+520,521c503
+< 				/* Unexpected format - keys don't match */
+< 				status = 1;
+---
+> 				strlcpy(err, "keys do not match", errlen);
+525d506
+< 			#endif /* HAVE_ED25519 */
+527,533c508,511
+< 			/* RSA key comparison - compare full DER structure
+< 			 * Note: Both Ed25519 and RSA now use i2d_PUBKEY_bio() which
+< 			 * produces consistent DER PUBKEY format for both key types */
+< 			if (BIO_number_written(outkey) == sig->sig_keylen)
+< 				status = memcmp(ptr, sig->sig_key, sig->sig_keylen);
+< 			else
+< 				status = 1;
+---
+> 			status = 1;
+> 			snprintf(err, errlen,
+> 				 "key do not match: local = %zd, remote = %zd",
+> 			         outkey_len, sig->sig_keylen);
+536,541c514,519
+< 		if (status != 0)
+< 			strlcpy(err, "keys do not match", errlen);
+< 
+< 		BIO_free(keybuf);
+< 		BIO_free(outkey);
+< 		#endif /* USE_GNUTLS */
+---
+> 		if (sig->sig_keytype != DKIM_KEYTYPE_ED25519)
+> 		{
+> 			BIO_free(keybuf);
+> 			BIO_free(outkey);
+> 		}
+> #endif /* USE_GNUTLS */
+544a523
+> 
+545a525,552
+> }
+> 
+> /*
+> **  DKIM_TEST_KEY -- retrieve a public key and verify it against a provided
+> **                   private key
+> **
+> **  Parameters:
+> **  	lib -- DKIM library handle
+> **  	selector -- selector
+> **  	domain -- domain name
+> **  	key -- private key to verify (PEM format)
+> **  	keylen -- size of private key
+> **  	dnssec -- DNSSEC result (may be NULL)
+> **  	err -- error buffer (may be NULL)
+> **  	errlen -- size of error buffer
+> **
+> **  Return value:
+> **  	1 -- keys don't match
+> **  	0 -- keys match (or no key provided)
+> **  	-1 -- error
+> */
+> 
+> int
+> dkim_test_key(DKIM_LIB *lib, char *selector, char *domain,
+>               char *key, size_t keylen, int *dnssec, char *err, size_t errlen)
+> {
+> 	return dkim_test_key2(lib, selector, domain, key, keylen,
+>                               DKIM_SIGN_RSASHA256, dnssec, err, errlen);
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim-types.h /tmp/OpenDKIM/libopendkim/dkim-types.h
+155d154
+< #ifdef USE_GNUTLS
+157c156
+< struct dkim_hash    // Renamed from dkim_sha
+---
+> struct dkim_sha
+159,163c158,162
+< 	int                hash_tmpfd;
+< 	u_int              hash_outlen;
+< 	gnutls_hash_hd_t   hash_hd;
+< 	u_char *           hash_out;
+< };
+---
+> #ifdef USE_GNUTLS
+> 	int			sha_tmpfd;
+> 	u_int			sha_outlen;
+> 	gnutls_hash_hd_t	sha_hd;
+> 	u_char *		sha_out;
+165,171c164,168
+< struct dkim_hash     // Renamed from dkim_sha256
+< {
+< 	int                hash_tmpfd;
+< 	BIO *              hash_tmpbio;
+< 	EVP_MD_CTX *       hash_ctx;        // Renamed from sha256_ctx
+< 	u_char             hash_out[EVP_MAX_MD_SIZE];  // Renamed from sha256_out
+< };
+---
+> 	int			sha_tmpfd;
+> 	BIO *			sha_tmpbio;
+> 	EVP_MD_CTX *		sha_ctx;
+> 	u_char			sha_out[EVP_MAX_MD_SIZE];
+> 	u_int			sha_outlen;
+172a170
+> };
+212d209
+< 	u_char			crypto_pad;
+216,217c213
+< 	EVP_PKEY *		crypto_pkey;	// Modern: Use this for all operations
+< 	void *			crypto_key;	// DEPRECATED: Legacy RSA* pointer, always NULL in modern code
+---
+> 	EVP_PKEY *		crypto_pkey;
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/dkim-util.c /tmp/OpenDKIM/libopendkim/dkim-util.c
+19d18
+< #include <stdio.h>
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/docs/dkim_alg_t.html /tmp/OpenDKIM/libopendkim/docs/dkim_alg_t.html
+27c27
+< <li> <tt>DKIM_SIGN_RSASHA256</tt> -- use an RSA-signed SHA256 hash of the message's
+---
+> <li> <tt>DKIM_SIGN_RSASHA1</tt> -- use an RSA-signed SHA1 hash of the message's
+29c29
+< <li> <tt>DKIM_SIGN_ED25519SHA256</tt> -- use an Ed25519-signed SHA256 hash of the
+---
+> <li> <tt>DKIM_SIGN_RSASHA256</tt> -- use an RSA-signed SHA256 hash of the
+41,42c41,42
+< <li><tt>DKIM_SIGN_ED25519SHA256</tt> is only available if the <b>OpenSSL</b>
+<     available at compile-time supported the Ed25519 algorithm.
+---
+> <li><tt>DKIM_SIGN_RSASHA256</tt> is only available if the <b>OpenSSL</b>
+>     available at compile-time supported the SHA256 algorithm.
+54,56d53
+< 
+< <br>
+< Copyright 2025 OpenDKIM contributors
+Only in /tmp/OpenDKIM/libopendkim/docs: dkim_code_to_name.html
+Only in /tmp/OpenDKIM/libopendkim/docs: dkim_iter_ctx_free.html
+Only in /tmp/OpenDKIM/libopendkim/docs: dkim_iter_ctx.html
+Only in /tmp/OpenDKIM/libopendkim/docs: dkim_nametable_first.html
+Only in /tmp/OpenDKIM/libopendkim/docs: dkim_nametable.html
+Only in /tmp/OpenDKIM/libopendkim/docs: dkim_nametable_next.html
+Only in /tmp/OpenDKIM/libopendkim/docs: dkim_name_to_code.html
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/docs/dkim_stat.html /tmp/OpenDKIM/libopendkim/docs/dkim_stat.html
+37a38
+> <li> <tt>DKIM_STAT_ITER_EOT</tt> -- the table has no more item
+88a90,91
+> <li><tt>DKIM_STAT_ITER_EOT</tt> is returned when the iteration on a table
+>     has reached to the end of the table and the table has no more entry
+99c102
+< Copyright (c) 2009, 2010, 2013, 2014, The Trusted Domain Project.
+---
+> Copyright (c) 2009, 2010, 2013, 2014, 2024, The Trusted Domain Project.
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/docs/index.html /tmp/OpenDKIM/libopendkim/docs/index.html
+71a72,78
+>   <td> <a href="dkim_iter_ctx.html"> <tt>DKIM_ITER_CTX</tt>
+>        </a> </td>
+>   <td> An iteration context over some table (currently, only support
+>        <a href="dkim_nametable.html"><tt>DKIM_NAMETABLE</tt>).</td>
+>  </tr>
+> 
+>  <tr>
+76a84,89
+>   <td> <a href="dkim_nametable.html"> <tt>DKIM_NAMETABLE</tt> </a> </td>
+>   <td> Look up tables for conversion between mnemonic codes and its name
+>        text as C strings</td>
+>  </tr>
+> 
+>  <tr>
+518a532,536
+>   <td> <a href="dkim_code_to_name.html"> <tt>dkim_code_to_name()</tt> </a> </td>
+>   <td> Translate a mnemonic code to its name. </td>
+>  </tr>
+> 
+>  <tr>
+535a554,558
+>   <td> <a href="dkim_iter_ctx_free.html"> <tt>dkim_iter_ctx_free()</tt> </a> </td>
+>   <td> Release resources associated with a <tt>DKIM_ITER_CTX</tt> context.</td>
+>  </tr>
+> 
+>  <tr>
+549a573,587
+>  </tr>
+> 
+>  <tr>
+>   <td> <a href="dkim_name_to_code.html"> <tt>dkim_name_to_code()</tt> </a> </td>
+>   <td> Translate a name to a mnemonic code. </td>
+>  </tr>
+> 
+>  <tr>
+>   <td> <a href="dkim_nametable_first.html"> <tt>dkim_nametable_first()</tt> </a> </td>
+>   <td> Get first table item and start iteration. </td>
+>  </tr>
+> 
+>  <tr>
+>   <td> <a href="dkim_nametable_next.html"> <tt>dkim_nametable_next()</tt> </a> </td>
+>   <td> Get next table item on the iteration. </td>
+Only in projects/opendkim/libopendkim/docs: Makefile
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/docs/Makefile.am /tmp/OpenDKIM/libopendkim/docs/Makefile.am
+14a15
+> 	dkim_code_to_name.html \
+50a52,53
+> 	dkim_iter_ctx.html \
+> 	dkim_iter_ctx_free.html \
+55a59,62
+> 	dkim_name_to_code.html \
+> 	dkim_nametable.html \
+> 	dkim_nametable_first.html \
+> 	dkim_nametable_next.html \
+Only in projects/opendkim/libopendkim/docs: Makefile.in
+Only in projects/opendkim/libopendkim: libopendkim.la
+Only in projects/opendkim/libopendkim: libopendkim_la-base32.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-base32.o
+Only in projects/opendkim/libopendkim: libopendkim_la-base64.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-base64.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-atps.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-atps.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-cache.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-cache.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-canon.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-canon.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-dns.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-dns.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-keys.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-keys.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-mailparse.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-mailparse.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-report.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-report.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-tables.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-tables.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-test.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-test.o
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-util.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-dkim-util.o
+Only in projects/opendkim/libopendkim: libopendkim_la-util.lo
+Only in projects/opendkim/libopendkim: libopendkim_la-util.o
+Only in projects/opendkim/libopendkim: .libs
+Only in projects/opendkim/libopendkim: Makefile
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/Makefile.am /tmp/OpenDKIM/libopendkim/Makefile.am
+11,12c11,12
+< libopendkim_la_SOURCES = base32.c base64.c dkim-atps.c dkim-cache.c dkim-canon.c dkim-dns.c dkim-keys.c dkim-mailparse.c dkim-report.c dkim-tables.c dkim-test.c dkim-util.c dkim.c util.c base64.h dkim-cache.h dkim-canon.h dkim-dns.h dkim-internal.h dkim-keys.h dkim-mailparse.h dkim-report.h dkim-tables.h dkim-test.h dkim-types.h dkim-util.h dkim.h util.h
+< libopendkim_la_CPPFLAGS = $(LIBCRYPTO_CPPFLAGS) $(LIBIDN2_CFLAGS)
+---
+> libopendkim_la_SOURCES = base32.c base64.c dkim-atps.c dkim-cache.c dkim-canon.c dkim-dns.c dkim-keys.c dkim-mailparse.c dkim-report.c dkim-tables.c dkim-test.c dkim-util.c dkim.c util.c base64.h dkim-cache.h dkim-canon.h dkim-dns.h dkim-internal.h dkim-keys.h dkim-mailparse.h dkim-report.h dkim-test.h dkim-types.h dkim-util.h dkim.h util.h
+> libopendkim_la_CPPFLAGS = $(LIBCRYPTO_CPPFLAGS)
+15c15
+< libopendkim_la_LIBADD = $(LIBOPENDKIM_LIBS) $(LIBCRYPTO_LDADD) $(COV_LIBADD) $(LIBIDN2_LIBS)
+---
+> libopendkim_la_LIBADD = $(LIBOPENDKIM_LIBS) $(LIBCRYPTO_LDADD) $(COV_LIBADD)
+Only in projects/opendkim/libopendkim: Makefile.in
+Only in projects/opendkim/libopendkim: opendkim.pc
+Only in projects/opendkim/libopendkim: symbols.map
+Only in projects/opendkim/libopendkim/tests: .deps
+Only in projects/opendkim/libopendkim/tests: Makefile
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/tests/Makefile.am /tmp/OpenDKIM/libopendkim/tests/Makefile.am
+44,46c44,45
+< 	t-test157 t-test158 t-test159 \
+< 	t-signperf t-verifyperf \
+< 	t-test00NEW
+---
+> 	t-test157 t-test158 t-test159 t-test160\
+> 	t-signperf t-verifyperf
+223c222
+< t_test00NEW_SOURCES = t-test00NEW.c t-testdata.h
+---
+> t_test160_SOURCES = t-test160.c t-testdata.h
+259c258
+< #.info-files: check-TESTS
+---
+> #.info-files: check-TESTS 
+297c296
+< 
+---
+>  
+Only in projects/opendkim/libopendkim/tests: Makefile.in
+Only in projects/opendkim/libopendkim/tests: test._domainkey.example.com.key
+Only in projects/opendkim/libopendkim/tests: test._domainkey.example.com.txt
+Only in projects/opendkim/libopendkim/tests: t-test00NEW.c
+Only in /tmp/OpenDKIM/libopendkim/tests: t-test160.c
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/tests/t-testdata.h /tmp/OpenDKIM/libopendkim/tests/t-testdata.h
+88,91c88,102
+< /* KEY is no longer SHA1 key, but an Ed25519-sha256 key! */
+< #define KEY		"-----BEGIN PRIVATE KEY-----\n" \
+< 	"MC4CAQAwBQYDK2VwBCIEIAUaY76CjnuKE8eHZzjDZvuPlrKPnJsvS0XbARwh30HX\n" \
+< 	"-----END PRIVATE KEY-----\n"
+---
+> #define KEY		"-----BEGIN RSA PRIVATE KEY-----\n" \
+> 	"MIICXQIBAAKBgQC4GUGr+d/6SFNzVLYpphnRd0QPGKz2uWnV65RAxa1Pw352Bqiz\n" \
+> 	"qiKOBjgYGzj8pJQSs8tOvv/2k6jpI809RnESqOFgF0gu3UJbNnu3+cd8k/kiQj+q\n" \
+> 	"4cKKRpAT92ccxc7svhCNgN1sBGmROYZuysG3Vu3Dyc079gSLtnSrgXb+gQIDAQAB\n" \
+> 	"AoGAemlI0opm1Kvs2T4VliH8/tvX5FXbBH8LEZQAUwVeFTB/UQlieXyCV39pIxZO\n" \
+> 	"0Sa50qm8YNL9rb5HTSZiHQFOwyAKNqS4m/7JCsbuH4gQkPgPF561BHNL9oKfYgJq\n" \
+> 	"9P4kEFfDTBoXKBMxwWtT7AKV8dYvCa3vYzPQ/1BnqQdw2zECQQDyscdgR9Ih59PQ\n" \
+> 	"b72ddibdsxS65uXS2vzYLe7SKl+4R5JgJzw0M6DTAnoYFf6JAsKGZM15PCC0E16t\n" \
+> 	"RRo47U9VAkEAwjEVrlQ0/8yPACbDggDJg/Zz/uRu1wK0zjqj4vKjleubaX4SEvj7\n" \
+> 	"r6xxZm9hC1pMJAC9y3bbkbgCRBjXfyY6fQJBANe5aq2MaZ41wTOPf45NjbKXEiAo\n" \
+> 	"SbUpboKCIbyyaa8V/2h0t7D3C0dE9l4efsguqdZoF7Rh2/f1F70QpYRgfJkCQQCH\n" \
+> 	"oRrAeGXP50JVW72fNgeJGH/pnghgOa6of0JpxwhENJuGMZxUDfxTtUA6yD3iXP3j\n" \
+> 	"A3WL/wbaHsfOYf9Y+g1NAkAGLhx67Ah+uBNK4Xvfz0YPGINX20m+CMsxAw7FOaNv\n" \
+> 	"IW2oWFfZCB4APkIis79Ql45AHpavwx5XodBMzZwJUvlL\n" \
+> 	"-----END RSA PRIVATE KEY-----\n"
+Only in projects/opendkim/libopendkim/tests: t-testdata.h.original
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/tests/t-verifyperf.c /tmp/OpenDKIM/libopendkim/tests/t-verifyperf.c
+26d25
+< #include "../dkim-tables.h"
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libopendkim/util.c /tmp/OpenDKIM/libopendkim/util.c
+7,8d6
+< **
+< **	Copyright 2025 OpenDKIM contributors
+21a20
+> #include <stdio.h>
+956,1028d954
+< }
+< 
+< /*  DKIM_CONVERT_DOMAIN -- convert UTF-8 domain to ASCII (A-label)
+< **
+< **  Parameters:
+< **  	input -- UTF-8 domain string to convert
+< **  	output -- pointer to store ASCII domain (caller must free)
+< **
+< **  Return value:
+< **  	DKIM_STAT_OK -- conversion successful
+< **  	DKIM_STAT_INTERNAL -- memory allocation failed
+< **  	DKIM_STAT_SYNTAX -- conversion failed
+< **  	DKIM_STAT_INVALID -- invalid parameters
+< **
+< **  Notes:
+< **  	Based on OpenARC's implementation. Converts UTF-8 U-labels
+< **  	to ASCII A-labels using libidn2 per RFC 8616. The output
+< **  	string must be freed by the caller using free().
+< **
+< **  	If HAVE_LIBIDN2 is not defined, the function simply duplicates
+< **  	the input string, providing basic compatibility.
+< */
+< 
+< DKIM_STAT
+< dkim_convert_domain(const char *input, char **output)
+< {
+< 	#ifdef HAVE_LIBIDN2
+< 	int result;
+< 	char *converted = NULL;
+< 
+< 	if (input == NULL || output == NULL)
+< 		return DKIM_STAT_INVALID;
+< 
+< 	*output = NULL;
+< 
+< 	/* Handle empty string */
+< 	if (input[0] == '\0')
+< 		return DKIM_STAT_INVALID;
+< 
+< 	/* Use libidn2 to convert UTF-8 domain to ASCII */
+< 	result = idn2_to_ascii_8z(input, &converted, IDN2_NONTRANSITIONAL);
+< 
+< 	if (result != IDN2_OK)
+< 	{
+< 		/* Clean up on error */
+< 		if (converted != NULL)
+< 			idn2_free(converted);
+< 		return DKIM_STAT_SYNTAX;
+< 	}
+< 
+< 	/* Make a copy that can be freed with standard free() */
+< 	*output = strdup(converted);
+< 	idn2_free(converted);
+< 
+< 	if (*output == NULL)
+< 		return DKIM_STAT_INTERNAL;
+< 
+< 	return DKIM_STAT_OK;
+< 	#else /* ! HAVE_LIBIDN2 */
+< 	/* No IDN support - just copy the input as-is */
+< 	if (input == NULL || output == NULL)
+< 		return DKIM_STAT_INVALID;
+< 
+< 	/* Handle empty string */
+< 	if (input[0] == '\0')
+< 		return DKIM_STAT_INVALID;
+< 
+< 	*output = strdup(input);
+< 	if (*output == NULL)
+< 		return DKIM_STAT_INTERNAL;
+< 
+< 	return DKIM_STAT_OK;
+< 	#endif /* HAVE_LIBIDN2 */
+Only in projects/opendkim/librbl: .deps
+Only in projects/opendkim/librbl: Makefile
+Only in projects/opendkim/librbl: Makefile.in
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/librbl/rbl.c /tmp/OpenDKIM/librbl/rbl.c
+332c332
+< 	struct __res_state *res;
+---
+> 	struct state *res;
+1138c1138
+< 		else if (type == T_RRSIG)
+---
+> 		else if ((type == T_RRSIG) || (type == T_DNAME))
+Only in projects/opendkim/librbl: rbl.pc
+Only in projects/opendkim: libtool
+Only in projects/opendkim/libut: .deps
+Only in projects/opendkim/libut: Makefile
+Only in projects/opendkim/libut: Makefile.in
+Only in projects/opendkim/libut: ut.pc
+Only in projects/opendkim/libvbr: .deps
+Only in projects/opendkim/libvbr: Makefile
+Only in projects/opendkim/libvbr: Makefile.in
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/libvbr/vbr.c /tmp/OpenDKIM/libvbr/vbr.c
+168,171c168
+< vbr_strlcpy(dst, src, size)
+< 	register char *dst;
+< 	register const char *src;
+< 	ssize_t size;
+---
+> vbr_strlcpy(char *dst, const char *src, ssize_t size)
+173c170
+< 	register ssize_t i;
+---
+> 	ssize_t i;
+Only in projects/opendkim/libvbr: vbr.pc
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/LICENSE /tmp/OpenDKIM/LICENSE
+2c2
+< Copyright 2025 OpenDKIM contributors.
+---
+> All rights reserved.
+4c4,13
+< Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+---
+> Redistribution and use in source and binary forms, with or without
+> modification, are permitted provided that the following conditions are met:
+>     * Redistributions of source code must retain the above copyright
+>       notice, this list of conditions and the following disclaimer.
+>     * Redistributions in binary form must reproduce the above copyright
+>       notice, this list of conditions and the following disclaimer in the
+>       documentation and/or other materials provided with the distribution.
+>     * Neither the name of The Trusted Domain Project nor the names of its
+>       contributors may be used to endorse or promote products derived from
+>       this software without specific prior written permission.
+6c15,18
+< 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+---
+> Portions of this project are also covered by the Sendmail Open Source
+> License, available in this distribution in the file "LICENSE.Sendmail".
+> See the copyright notice(s) in each file to determine whether it is covered
+> by either or both of the licenses.  For example:
+8c20,21
+< 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+---
+> 	Copyright (c) <year> Sendmail, Inc. and its suppliers.
+> 	  All rights reserved.
+10c23,24
+< 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+---
+> Files bearing the banner above are covered under the Sendmail Open Source
+> License (see LICENSE.Sendmail).
+12c26,43
+< THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+---
+> 	Copyright (c) <year>, The Trusted Domain Project.
+> 	  All rights reserved.
+> 
+> Files bearing the banner above are covered under the Trusted Domain Project
+> License (above).
+> 
+> Files bearing both banners are covered under both sets of license terms.
+> 
+> THIS SOFTWARE IS PROVIDED BY THE TRUSTED DOMAIN PROJECT ''AS IS'' AND ANY
+> EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+> WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+> DISCLAIMED. IN NO EVENT SHALL THE TRUSTED DOMAIN PROJECT BE LIABLE FOR ANY
+> DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+> (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+> LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+> ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+> (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+> SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+Only in projects/opendkim/m4: libtool.m4
+Only in projects/opendkim/m4: lt~obsolete.m4
+Only in projects/opendkim/m4: ltoptions.m4
+Only in projects/opendkim/m4: ltsugar.m4
+Only in projects/opendkim/m4: ltversion.m4
+Only in projects/opendkim: Makefile
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/Makefile.am /tmp/OpenDKIM/Makefile.am
+36,39c36,49
+< $(DIST_ARCHIVES).sha256: $(DIST_ARCHIVES)
+< 	sha256 $? > $@ || sha256sum $? > $@
+< $(DIST_ARCHIVES).sha512: $(DIST_ARCHIVES)
+< 	sha512 $? > $@ || sha512sum $? > $@
+---
+> # TODO: get configure.ac to generate --enable-{feature} for all
+> # non-experimental features and substitute it here e.g  @SUPPORTED_FEATURES@.
+> # Perhaps all features would enable a more comprehensive test coverage map
+> # though.
+> DISTCHECK_CONFIGURE_FLAGS=--enable-vbr --with-lua --enable-stats --with-odbx --with-db --with-openssl=/usr/local --enable-atps --enable-replace_rules
+> 
+> $(DIST_ARCHIVES): distcheck
+> 
+> $(DIST_ARCHIVES).md5: $(DIST_ARCHIVES)
+> 	md5 $? > $@ || md5sum $? > $@
+> 
+> $(DIST_ARCHIVES).sha1: $(DIST_ARCHIVES)
+> 	sha1 $? > $@ || sha1sum $? > $@
+> 
+42c52,53
+< push: $(DIST_ARCHIVES) $(DIST_ARCHIVES).sha256 $(DIST_ARCHIVES).sha512 $(DIST_ARCHIVES).asc
+---
+> 
+> push: $(DIST_ARCHIVES) $(DIST_ARCHIVES).sha1 $(DIST_ARCHIVES).md5 $(DIST_ARCHIVES).asc
+47c58
+< 	scp $(DIST_ARCHIVES) $(DIST_ARCHIVES).sha256 $(DIST_ARCHIVES).sha512 $(DIST_ARCHIVES).asc RELEASE_NOTES cm-msk,opendkim@frs.sourceforge.net:/home/frs/project/o/op/opendkim/
+---
+> 	scp $(DIST_ARCHIVES) $(DIST_ARCHIVES).sha1 $(DIST_ARCHIVES).md5 $(DIST_ARCHIVES).asc RELEASE_NOTES cm-msk,opendkim@frs.sourceforge.net:/home/frs/project/o/op/opendkim/
+Only in projects/opendkim: Makefile.in
+Only in projects/opendkim/miltertest: .deps
+Only in projects/opendkim/miltertest: Makefile
+Only in projects/opendkim/miltertest: Makefile.in
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/miltertest/miltertest.c /tmp/OpenDKIM/miltertest/miltertest.c
+3,8d2
+< **
+< **  Copyright 2025 OpenDKIM contributors.
+< */
+< 
+< /* Note: This file currently works with Lua5.1 through Lua5.4.
+< ** Checked in September 2025.
+4018,4020d4011
+< /* The below LUA_VERSION_NUM >= 502 changes cover Lua5.2, Lua5.3, and Lua5.4.
+< ** Checked in September 2025.
+< */
+Only in projects/opendkim: my_temp_testing
+Only in projects/opendkim/opendkim: .deps
+Only in projects/opendkim/opendkim: .libs
+Only in projects/opendkim/opendkim: Makefile
+Only in projects/opendkim/opendkim: Makefile.in
+Only in projects/opendkim/opendkim: opendkim
+Only in projects/opendkim/opendkim: opendkim.8
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim.8.in /tmp/OpenDKIM/opendkim/opendkim.8.in
+9a10
+> [\-G|\-g]
+41,46d41
+< supports both RSA and Ed25519 signature algorithms. Ed25519 signatures
+< use the algorithm identifier "ed25519-sha256" and provide equivalent
+< security to RSA-2048 with significantly smaller signatures and faster
+< operations. Ed25519 support requires OpenSSL 1.1.1 or later.
+< 
+< .B opendkim
+290a286,298
+> .I \-g
+> Skip walking the SigningTable for any missing keys in the KeyTable.
+> This overrides the config option CheckSigningTable in
+> .I opendkim.conf(5).
+> .TP
+> .I \-G
+> Walk the SigningTable for any missing keys in the KeyTable on
+> loading config file.  This overrides config option CheckSigningTable in
+> .I opendkim.conf(5).
+> In conjunction with
+> .I \-n
+> option described below, you can perform the check only.
+> .TP
+301,303c309,310
+< all messages. Both RSA and Ed25519 private keys are supported.
+< The signing algorithm will be automatically selected based on the key type.
+< Ignored if a configuration file is referenced that defines a KeyTable.
+---
+> all messages.  Ignored if a configuration file is referenced that defines
+> a KeyTable.
+391,398c398,399
+< Supported algorithms include
+< .I rsa-sha256,
+< and
+< .I ed25519-sha256.
+< Use 'opendkim \-V' to see the complete list of supported algorithms.
+< The default is automatically determined based on the private key type:
+< .I ed25519-sha256
+< for Ed25519 keys,
+---
+> Use 'opendkim \-V' to see the list of supported algorithms.
+> The default is
+400c401,402
+< for RSA keys.
+---
+> if it is available, otherwise it will be
+> .I rsa-sha1.
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-ar.c /tmp/OpenDKIM/opendkim/opendkim-ar.c
+457c457
+< 				state = 3;
+---
+> 				state = 14;
+482c482
+< 			state = 3;
+---
+> 			state = 14;
+485a486,495
+> 		  case 14:				/* method or "none" */
+> 			if (strcasecmp((char *) tokens[c], "none") == 0)
+> 			{
+> 				prevstate = state;
+> 				state = 15;
+> 				continue;
+> 			}
+> 
+> 			/* FALLTHROUGH */
+> 
+653a664,667
+> 
+> 		  case 15:				/* terminal state after no-result */
+> 			/* any token should not appear */
+> 			return -1;
+Only in projects/opendkim/opendkim: opendkim-atpszone.8
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-atpszone.8.in /tmp/OpenDKIM/opendkim/opendkim-atpszone.8.in
+60,61c60,61
+< Specifies which SHA hash algorithm to use.  Must be one of "none" or "sha256",
+< with "sha256" being the default if it is available.
+---
+> Specifies which SHA hash algorithm to use.  Must be one of "none", "sha1"
+> and "sha256", with "sha256" being the default if it is available.
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-atpszone.c /tmp/OpenDKIM/opendkim/opendkim-atpszone.c
+149a150
+> #ifdef HAVE_SHA256
+150a152,154
+> #else /* HAVE_SHA256 */
+> 	char shaout[SHA_DIGEST_LENGTH];
+> #endif /* HAVE_SHA256 */
+179c183,184
+< 			if (strcasecmp(optarg, "sha256") != 0 &&
+---
+> 			if (strcasecmp(optarg, "sha1") != 0 &&
+> 			    strcasecmp(optarg, "sha256") != 0 &&
+185a191
+> #ifndef HAVE_SHA256
+192a199
+> #endif /* ! HAVE_SHA256 */
+194c201,204
+< 			shalen = SHA256_DIGEST_LENGTH;
+---
+> 			if (strcasecmp(hash, "sha1") == 0)
+> 				shalen = SHA_DIGEST_LENGTH;
+> 			else
+> 				shalen = SHA256_DIGEST_LENGTH;
+410c420
+< 			/* compute hash */
+---
+> 			/* compute SHA1 hash */
+411a422
+> # ifdef HAVE_SHA256
+417c428,434
+< 
+---
+> 			else
+> 			{
+> 				(void) gnutls_hash_init(&sha, GNUTLS_DIG_SHA1);
+> 			}
+> # else /* HAVE_SHA256 */
+> 			(void) gnutls_hash_init(&sha, GNUTLS_DIG_SHA1);
+> # endif /* HAVE_SHA256 */
+421,445c438,454
+< #else /* USE_GNUTLS */
+< 	if (hash == NULL || strcasecmp(hash, "sha256") == 0)
+< 	{
+< 		EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
+< 		unsigned int digest_len;
+< 
+< 		if (md_ctx == NULL)
+< 		{
+< 		fprintf(stderr, "%s: EVP_MD_CTX_new() failed\n", progname);
+< 		(void) dkimf_db_close(db);
+< 		return 1;
+< 		}
+< 
+< 		if (EVP_DigestInit_ex(md_ctx, EVP_sha256(), NULL) != 1 ||
+< 		EVP_DigestUpdate(md_ctx, domain, strlen(domain)) != 1 ||
+< 		EVP_DigestFinal_ex(md_ctx, shaout, &digest_len) != 1)
+< 		{
+< 		fprintf(stderr, "%s: EVP digest operation failed\n", progname);
+< 		EVP_MD_CTX_free(md_ctx);
+< 		(void) dkimf_db_close(db);
+< 		return 1;
+< 		}
+< 
+< 		EVP_MD_CTX_free(md_ctx);
+< 	}
+---
+> # ifdef HAVE_SHA256
+> 			if (hash == NULL || strcasecmp(hash, "sha256") == 0)
+> 			{
+> 				(void) EVP_Digest(domain, strlen(domain),
+> 				                  shaout, NULL, EVP_sha256(),
+> 				                  NULL);
+> 			}
+> 			else
+> 			{
+> 				(void) EVP_Digest(domain, strlen(domain),
+> 				                  shaout, NULL, EVP_sha1(),
+> 				                  NULL);
+> 			}
+> # else /* HAVE_SHA256 */
+> 			(void) EVP_Digest(domain, strlen(domain), shaout, NULL,
+> 			                  EVP_sha1(), NULL);
+> # endif /* HAVE_SHA256 */
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim.c /tmp/OpenDKIM/opendkim/opendkim.c
+62c62
+< # include <openssl/evp.h>
+---
+> # include <openssl/sha.h>
+65a66,69
+> #ifndef SHA_DIGEST_LENGTH
+> # define SHA_DIGEST_LENGTH 20
+> #endif /* ! SHA_DIGEST_LENGTH */
+> 
+136c140
+< #define CMDLINEOPTS	"Ab:c:d:De:fF:k:lL:no:p:P:Qrs:S:t:T:u:vVWx:X?"
+---
+> #define CMDLINEOPTS	"Ab:c:d:De:fF:Ggk:lL:no:p:P:Qrs:S:t:T:u:vVWx:X?"
+238a243
+> 	_Bool		conf_allowsha1only;	/* allow rsa-sha1 verifying */
+245a251
+> 	_Bool		conf_checksigningtable; /* check keys on dkimf_config_load */
+509,514d514
+< 
+< /* General EVP context */
+< #ifndef USE_GNUTLS
+< 	EVP_MD_CTX	*mctx_evp_ctx;		/* General EVP context */
+< #endif /* USE_GNUTLS */
+< 
+517c517
+< 	gnutls_hash_hd_t mctx_hash;		/* hash, for dup detection */
+---
+> 	gnutls_hash_hd_t mctx_hash;			/* hash, for dup detection */
+519c519
+< 	EVP_MD_CTX	*mctx_hash;		/* EVP context for reputation */
+---
+> 	SHA_CTX		mctx_hash;		/* hash, for dup detection */
+626,639d625
+< struct lookup dkimf_canon[] =
+< {
+< 	{ "relaxed",		DKIM_CANON_RELAXED },
+< 	{ "simple",		DKIM_CANON_SIMPLE },
+< 	{ NULL,			-1 },
+< };
+< 
+< struct lookup dkimf_sign[] =
+< {
+< 	{ "rsa-sha256",		DKIM_SIGN_RSASHA256 },
+< 	{ "ed25519-sha256",	DKIM_SIGN_ED25519SHA256 },
+< 	{ NULL,			-1 },
+< };
+< 
+641a628
+> #ifdef HAVE_SHA256
+642a630,631
+> #endif /* HAVE_SHA256 */
+> 	{ "sha1",		1 },
+748a738,739
+> _Bool init_checksigningtable;			/* initializing value for CheckSigningTable */
+> _Bool use_cf_checksigningtable;			/* use CheckSigningTable on config file? */
+1247d1237
+< 	return -1;
+3671c3661
+< 	else if (dkimf_insheader(ctx, 1, name, value) == MI_SUCCESS)
+---
+> 	else if (dkimf_insheader(ctx, 0, name, value) == MI_SUCCESS)
+3720c3710
+< 	else if (dkimf_chgheader(ctx, name, 1, NULL) == MI_SUCCESS)
+---
+> 	else if (dkimf_chgheader(ctx, name, idx+1, NULL) == MI_SUCCESS)
+4247c4237
+< 	if (dkimf_insheader(ctx, 1, AUTHRESULTSHDR,
+---
+> 	if (dkimf_insheader(ctx, 0, AUTHRESULTSHDR,
+4935c4925
+< 	struct dkimf_db_data dbd[3];
+---
+> 	struct dkimf_db_data dbd[4];
+4938a4929,4930
+> 	char signalgstr[BUFRSZ + 1];
+> 	dkim_alg_t signalg = DKIM_SIGN_DEFAULT;
+4963a4956
+> 		memset(signalgstr, '\0', sizeof signalgstr);
+4973a4967,4969
+> 		dbd[3].dbdata_buffer = signalgstr;
+> 		dbd[3].dbdata_buflen = sizeof signalgstr - 1;
+> 		dbd[3].dbdata_flags = DKIMF_DB_DATA_OPTIONAL;
+4976c4972
+< 		                 dbd, 3, &found) != 0)
+---
+> 		                 dbd, 4, &found) != 0)
+5079a5076,5093
+> 
+> 		if (dbd[3].dbdata_buflen > 0 && signalgstr[0] != '\0')
+> 		{
+> 			signalg = (dkim_alg_t)dkim_name_to_code(dkim_table_algorithms,
+> 			                                        signalgstr);
+> 			if (signalg == -1)
+> 			{
+> 				if (dolog)
+> 				{
+> 					syslog(LOG_ERR,
+> 					       "KeyTable entry for '%s' corrupt:"
+> 					       " invalid sign algorithm %s",
+> 					       keyname, signalgstr);
+> 				}
+> 
+> 				return 2;
+> 			}
+> 		}
+5091a5106
+> 	new->srq_signalg = signalg;
+5882a5898
+> 	new->conf_checksigningtable = init_checksigningtable;
+6199a6216,6221
+> 		if (use_cf_checksigningtable)
+> 		{
+> 			(void) config_get(data, "CheckSigningTable",
+> 			                  &conf->conf_checksigningtable,
+> 			                  sizeof conf->conf_checksigningtable);
+> 		}
+6538a6561,6564
+> 		(void) config_get(data, "AllowSHA1Only",
+> 		                  &conf->conf_allowsha1only,
+> 		                  sizeof conf->conf_allowsha1only);
+> 
+7694,7695c7720,7721
+< 		conf->conf_signalg = dkimf_lookup_strtoint(conf->conf_signalgstr,
+< 		                                           dkimf_sign);
+---
+> 		conf->conf_signalg = dkim_name_to_code(dkim_table_algorithms,
+> 		                                       conf->conf_signalgstr);
+7716,7717c7742,7743
+< 			conf->conf_hdrcanon = dkimf_lookup_strtoint(conf->conf_canonstr,
+< 			                                            dkimf_canon);
+---
+> 			conf->conf_hdrcanon = dkim_name_to_code(dkim_table_canonicalizations,
+> 			                                        conf->conf_canonstr);
+7732,7733c7758,7759
+< 			conf->conf_hdrcanon = dkimf_lookup_strtoint(conf->conf_canonstr,
+< 			                                            dkimf_canon);
+---
+> 			conf->conf_hdrcanon = dkim_name_to_code(dkim_table_canonicalizations,
+> 			                                        conf->conf_canonstr);
+7742,7743c7768,7769
+< 			conf->conf_bodycanon = dkimf_lookup_strtoint(p + 1,
+< 			                                             dkimf_canon);
+---
+> 			conf->conf_bodycanon = dkim_name_to_code(dkim_table_canonicalizations,
+> 			                                         p + 1);
+8320c8346,8348
+< 		if (conf->conf_signtabledb != NULL)
+---
+> 		if (conf->conf_checksigningtable &&
+> 		    conf->conf_signtabledb != NULL &&
+> 		    dkimf_db_can_walk(conf->conf_signtabledb))
+8324c8352
+< 			struct dkimf_db_data dbd[3];
+---
+> 			struct dkimf_db_data dbd[4];
+8328a8357
+> 			char signalgstr[BUFRSZ + 1];
+8329a8359
+> 			int db_stat;
+8331,8332d8360
+< 			dbd[0].dbdata_flags = 0;
+< 			
+8333a8362,8365
+> 			/*
+> 			** As we don't care signer values here,
+> 			** we don't need to clear it.
+> 			*/
+8340c8372
+< 			dbd[1].dbdata_flags = 0;
+---
+> 			dbd[1].dbdata_flags = DKIMF_DB_DATA_OPTIONAL;
+8342,8343c8374,8375
+< 			while (dkimf_db_walk(conf->conf_signtabledb, first,
+< 			                     NULL, NULL, dbd, 2) == 0)
+---
+> 			while ((db_stat = dkimf_db_walk(conf->conf_signtabledb,
+> 			                                first, NULL, NULL, dbd, 2)) == 0)
+8355a8388,8395
+> 				dbd[3].dbdata_buffer = signalgstr;
+> 				dbd[3].dbdata_buflen = sizeof signalgstr - 1;
+> 				dbd[3].dbdata_flags = DKIMF_DB_DATA_OPTIONAL;
+> 				/*
+> 				** As we don't care for values of the entry
+> 				** in KeyTable here, we don't need to clear
+> 				** buffers for them.
+> 				*/
+8359c8399
+< 				                 dbd, 3, &found) != 0 ||
+---
+> 				                 dbd, 4, &found) != 0 ||
+8375a8416,8425
+> 				dbd[1].dbdata_buffer = signer;
+> 				dbd[1].dbdata_buflen = sizeof signer - 1;
+> 				dbd[1].dbdata_flags = DKIMF_DB_DATA_OPTIONAL;
+> 			}
+> 			if (db_stat == -1)
+> 			{
+> 				snprintf(err, errlen,
+> 				         "error on retrieving an entry from \"%s\"",
+> 				         conf->conf_signtable);
+> 				return -1;
+9119c9169
+< 	(void) gnutls_hash_init(&ctx->mctx_hash, GNUTLS_DIG_SHA256);
+---
+> 	(void) gnutls_hash_init(&ctx->mctx_hash, GNUTLS_DIG_SHA1);
+9121,9129c9171
+< 	ctx->mctx_hash = EVP_MD_CTX_new();
+< 	if (ctx->mctx_hash != NULL)
+< 	{
+< 		if (EVP_DigestInit_ex(ctx->mctx_hash, EVP_sha256(), NULL) != 1)
+< 		{
+< 			EVP_MD_CTX_free(ctx->mctx_hash);
+< 			ctx->mctx_hash = NULL;
+< 		}
+< 	}
+---
+> 	SHA1_Init(&ctx->mctx_hash);
+9133,9144d9174
+< /* Initialize general EVP context (always available) */
+< #ifndef USE_GNUTLS
+< 	ctx->mctx_evp_ctx = EVP_MD_CTX_new();
+< 	if (ctx->mctx_evp_ctx != NULL)
+< 	{
+< 		if (EVP_DigestInit_ex(ctx->mctx_evp_ctx, EVP_sha256(), NULL) != 1)
+< 		{
+< 			EVP_MD_CTX_free(ctx->mctx_evp_ctx);
+< 			ctx->mctx_evp_ctx = NULL;
+< 		}
+< 	}
+< #endif /* USE_GNUTLS */
+9295,9300d9324
+< #ifdef _FFR_REPUTATION
+< # ifndef USE_GNUTLS
+< 	if (ctx->mctx_hash != NULL)
+< 		EVP_MD_CTX_free(ctx->mctx_hash);
+< # endif /* USE_GNUTLS */
+< #endif /* _FFR_REPUTATION */
+10660a10685
+> 			unsigned int sigflag;
+10682c10707,10712
+< 			if ((dkim_sig_getflags(sigs[c]) & DKIM_SIGFLAG_PASSED) != 0 &&
+---
+> 			sigflag = dkim_sig_getflags(sigs[c]);
+> 			if (sigflag & DKIM_SIGFLAG_IGNORE)
+> 			{
+> 				result = "policy";
+> 			}
+> 			else if ((sigflag & DKIM_SIGFLAG_PASSED) != 0 &&
+10706,10707c10736,10737
+< 			else if ((dkim_sig_getflags(sigs[c]) & DKIM_SIGFLAG_PROCESSED) != 0 &&
+< 			         ((dkim_sig_getflags(sigs[c]) & DKIM_SIGFLAG_PASSED) == 0 ||
+---
+> 			else if ((sigflag & DKIM_SIGFLAG_PROCESSED) != 0 &&
+> 			         ((sigflag & DKIM_SIGFLAG_PASSED) == 0 ||
+10789c10819
+<  				                                    : ", ",
+---
+>  				                                    : "; ",
+11027a11058,11060
+> # ifdef USE_LUA
+> 	    conf->conf_finalscript != NULL ||
+> # endif /* USE_LUA */
+11031a11065,11067
+> # ifdef USE_LUA
+> 	if (conf->conf_capture || conf->conf_finalscript != NULL)
+> # else /* USE_LUA */
+11032a11069
+> # endif /* USE_LUA */
+11035a11073,11075
+> # ifdef USE_LUA
+> 	if (conf->conf_redirect != NULL || conf->conf_finalscript != NULL)
+> # else /* USE_LUA */
+11036a11077
+> # endif /* USE_LUA */
+11537,11541c11578,11579
+< 	if (dfc->mctx_hash != NULL)
+< 	{
+< 		(void) EVP_DigestUpdate(dfc->mctx_hash, headerf, strlen(headerf));
+< 		(void) EVP_DigestUpdate(dfc->mctx_hash, headerv, strlen(headerv));
+< 	}
+---
+> 	SHA1_Update(&dfc->mctx_hash, headerf, strlen(headerf));
+> 	SHA1_Update(&dfc->mctx_hash, headerv, strlen(headerv));
+11744c11782
+< 			c = dkimf_lookup_strtoint(headerv, dkimf_canon);
+---
+> 			c = dkim_name_to_code(dkim_table_canonicalizations, headerv);
+11747c11785
+< 			c = dkimf_lookup_strtoint(slash + 1, dkimf_canon);
+---
+> 			c = dkim_name_to_code(dkim_table_canonicalizations, slash + 1);
+11755c11793
+< 			c = dkimf_lookup_strtoint(headerv, dkimf_canon);
+---
+> 			c = dkim_name_to_code(dkim_table_canonicalizations, headerv);
+11880c11918
+< 		strlcpy(dkimf_dstring_get(addr), conf->conf_defsender, sizeof addr);
+---
+> 		dkimf_dstring_copy(addr, conf->conf_defsender);
+12329,12330c12367,12374
+< 					strlcpy((char *) dfc->mctx_domain, p,
+< 					        sizeof dfc->mctx_domain);
+---
+> 					/*
+> 					** We must not use strlcpy() here since
+> 					** src and dst overlap.
+> 					*/
+> 					char* p2 = (char *) dfc->mctx_domain;
+> 					while ((*p2++ = *p++))
+> 					{
+> 					}
+12644a12689
+> 			dkim_alg_t signalg;
+12670a12716,12717
+> 			signalg = (sr->srq_signalg == DKIM_SIGN_DEFAULT)?
+> 			          dfc->mctx_signalg:sr->srq_signalg;
+12677c12724
+< 			                         dfc->mctx_signalg,
+---
+> 			                         signalg,
+13381,13382c13428
+< 	if (dfc->mctx_hash != NULL)
+< 		(void) EVP_DigestUpdate(dfc->mctx_hash, bodyp, bodylen);
+---
+> 	SHA1_Update(&dfc->mctx_hash, bodyp, bodylen);
+13545c13591
+< 		if (dkimf_insheader(ctx, 1, AUTHRESULTSHDR,
+---
+> 		if (dkimf_insheader(ctx, 0, AUTHRESULTSHDR,
+14060c14106,14107
+< 				if (conf->conf_sigmintype == SIGMIN_PERCENT)
+---
+> 				/* In the case body is empty, we don't treat it as partial */
+> 				if (bodylen)
+14062c14109,14111
+< 					size_t signpct;
+---
+> 					if (conf->conf_sigmintype == SIGMIN_PERCENT)
+> 					{
+> 						size_t signpct;
+14064c14113
+< 					signpct = (100 * canonlen) / bodylen;
+---
+> 						signpct = (100 * canonlen) / bodylen;
+14066,14076c14115,14125
+< 					if (signpct < conf->conf_sigmin)
+< 						dfc->mctx_status = DKIMF_STATUS_PARTIAL;
+< 				}
+< 				else if (conf->conf_sigmintype == SIGMIN_MAXADD)
+< 				{
+< 					if (canonlen + conf->conf_sigmin < bodylen)
+< 						dfc->mctx_status = DKIMF_STATUS_PARTIAL;
+< 				}
+< 				else
+< 				{
+< 					size_t required;
+---
+> 						if (signpct < conf->conf_sigmin)
+> 							dfc->mctx_status = DKIMF_STATUS_PARTIAL;
+> 					}
+> 					else if (conf->conf_sigmintype == SIGMIN_MAXADD)
+> 					{
+> 						if (canonlen + conf->conf_sigmin < bodylen)
+> 							dfc->mctx_status = DKIMF_STATUS_PARTIAL;
+> 					}
+> 					else
+> 					{
+> 						size_t required;
+14078,14079c14127,14128
+< 					required = MIN(conf->conf_sigmin,
+< 					               bodylen);
+---
+> 						required = MIN(conf->conf_sigmin,
+> 						               bodylen);
+14081,14082c14130,14132
+< 					if (canonlen < required)
+< 						dfc->mctx_status = DKIMF_STATUS_PARTIAL;
+---
+> 						if (canonlen < required)
+> 							dfc->mctx_status = DKIMF_STATUS_PARTIAL;
+> 					}
+14403c14453
+< 				unsigned char digest[EVP_MAX_MD_SIZE];
+---
+> 				unsigned char digest[SHA_DIGEST_LENGTH];
+14409,14424c14459
+< 				if (dfc->mctx_hash != NULL)
+< 				{
+< 					unsigned int digest_len;
+< 					if (EVP_DigestFinal_ex(dfc->mctx_hash, digest, &digest_len) != 1)
+< 					{
+< 						/* Handle error - and log it */
+< 						if (conf->conf_dolog)
+< 						syslog(LOG_WARNING, "%s: EVP_DigestFinal_ex() failed", dfc->mctx_jobid);
+< 						memset(digest, 0, EVP_MAX_MD_SIZE);
+< 						digest_len = 0;  // Also set length to 0 on error
+< 					}
+< 				}
+< 				else
+< 				{
+< 					memset(digest, 0, EVP_MAX_MD_SIZE);
+< 				}
+---
+> 				SHA1_Final(digest, &dfc->mctx_hash);
+14442c14477
+< 					                         digest_len,  // Use the actual length
+---
+> 					                         SHA_DIGEST_LENGTH,
+14498c14533
+< 					                         digest_len,  // Use the actual length
+---
+> 					                         SHA_DIGEST_LENGTH,
+15012c15047
+< 					if (dkimf_insheader(ctx, 1,
+---
+> 					if (dkimf_insheader(ctx, 0,
+15215c15250
+< 			if (dkimf_insheader(ctx, 1, DKIM_SIGNHEADER,
+---
+> 			if (dkimf_insheader(ctx, 0, DKIM_SIGNHEADER,
+15251c15286
+< 			if (dkimf_insheader(ctx, 1, VBR_INFOHEADER,
+---
+> 			if (dkimf_insheader(ctx, 0, VBR_INFOHEADER,
+15301c15336
+< 		if (dkimf_insheader(ctx, 1, SWHEADERNAME, xfhdr) != MI_SUCCESS)
+---
+> 		if (dkimf_insheader(ctx, 0, SWHEADERNAME, xfhdr) != MI_SUCCESS)
+15409a15445,15479
+> #ifdef QUERY_CACHE
+> 		if (querycache)
+> 		{
+> 			time_t now;
+> 
+> 			(void) time(&now);
+> 			if (cache_lastlog + CACHESTATSINT < now)
+> 			{
+> 				u_int c_hits;
+> 				u_int c_queries;
+> 				u_int c_expired;
+> 				u_int c_pct;
+> 				u_int c_keys;
+> 
+> 				dkim_getcachestats(cc->cctx_config->conf_libopendkim,
+> 				                   &c_queries, &c_hits, &c_expired,
+> 				                   &c_keys, FALSE);
+> 
+> 				cache_lastlog = now;
+> 
+> 				if (c_queries == 0)
+> 					c_pct = 0;
+> 				else
+> 					c_pct = (c_hits * 100) / c_queries;
+> 
+> 				syslog(LOG_INFO,
+> 				       "cache: %u quer%s, %u hit%s (%d%%), %u expired, %u key%s",
+> 				       c_queries, c_queries == 1 ? "y" : "ies",
+> 				       c_hits, c_hits == 1 ? "" : "s",
+> 				       c_pct, c_expired,
+> 				       c_keys, c_keys == 1 ? "" : "s");
+> 			}
+> 		}
+> #endif /* QUERY_CACHE */
+> 
+15424,15458d15493
+< #ifdef QUERY_CACHE
+< 	if (querycache)
+< 	{
+< 		time_t now;
+< 
+< 		(void) time(&now);
+< 		if (cache_lastlog + CACHESTATSINT < now)
+< 		{
+< 			u_int c_hits;
+< 			u_int c_queries;
+< 			u_int c_expired;
+< 			u_int c_pct;
+< 			u_int c_keys;
+< 
+< 			dkim_getcachestats(cc->cctx_config->conf_libopendkim,
+< 			                   &c_queries, &c_hits, &c_expired,
+< 			                   &c_keys, FALSE);
+< 
+< 			cache_lastlog = now;
+< 
+< 			if (c_queries == 0)
+< 				c_pct = 0;
+< 			else
+< 				c_pct = (c_hits * 100) / c_queries;
+< 
+< 			syslog(LOG_INFO,
+< 			       "cache: %u quer%s, %u hit%s (%d%%), %u expired, %u key%s",
+< 			       c_queries, c_queries == 1 ? "y" : "ies",
+< 			       c_hits, c_hits == 1 ? "" : "s",
+< 			       c_pct, c_expired,
+< 			       c_keys, c_keys == 1 ? "" : "s");
+< 		}
+< 	}
+< #endif /* QUERY_CACHE */
+< 
+15517a15553,15554
+> 	                "\t-g          \tdo not walk SigningTable when loading config\n"
+> 	                "\t-G          \tforce walk SigningTable when loading config\n"
+15592a15630,15633
+> 	DKIM_STAT dkim_stat;
+> 	DKIM_ITER_CTX *iter_ctx;
+> 	int entry_code;
+> 	char *entry_name;
+15605a15647,15648
+> 	init_checksigningtable = TRUE;
+> 	use_cf_checksigningtable = TRUE;
+15692a15736,15747
+> 		  case 'g':
+> 			use_cf_checksigningtable = FALSE;
+> 			init_checksigningtable = FALSE;
+> 			curconf->conf_checksigningtable = FALSE;
+> 			break;
+> 
+> 		  case 'G':
+> 			use_cf_checksigningtable = FALSE;
+> 			init_checksigningtable = TRUE;
+> 			curconf->conf_checksigningtable = TRUE;
+> 			break;
+> 
+15819a15875,15877
+> 			dkim_stat = dkim_nametable_first(dkim_table_algorithms,
+> 			                                 &iter_ctx, &entry_name,
+> 			                                 &entry_code);
+15821c15879
+< 			for (c = 0; dkimf_sign[c].str != NULL; c++)
+---
+> 			if (dkim_stat == DKIM_STAT_NORESOURCE)
+15823,15826c15881,15900
+< 				if (dkimf_sign[c].code != DKIM_SIGN_RSASHA256 ||
+< 	    			    dkim_libfeature(curconf->conf_libopendkim,
+< 				                    DKIM_FEATURE_SHA256))
+< 					printf("\t\t%s\n", dkimf_sign[c].str);
+---
+> 				printf("\twarn: list of algorithms is not "
+> 				       "available\n");
+> 			}
+> 			else
+> 			{
+> 				while(dkim_stat == DKIM_STAT_OK)
+> 				{
+> 					if (entry_code != DKIM_SIGN_RSASHA256 ||
+> 					    dkim_libfeature(curconf->conf_libopendkim,
+> 					                    DKIM_FEATURE_SHA256))
+> 					{
+> 						printf("\t\t%s\n", entry_name);
+> 					}
+> 					dkim_stat = dkim_nametable_next(iter_ctx,
+> 					                                &entry_name,
+> 					                                &entry_code);
+> 				}
+> 				dkim_stat = dkim_iter_ctx_free(iter_ctx);
+> 				/* we can do nothing eveif dkim_stat is not
+> 				   DKIM_STAT_OK ... */
+15829,15830c15903,15923
+< 			for (c = 0; dkimf_canon[c].str != NULL; c++)
+< 				printf("\t\t%s\n", dkimf_canon[c].str);
+---
+> 			dkim_stat = dkim_nametable_first(dkim_table_canonicalizations,
+> 			                                 &iter_ctx, &entry_name,
+> 			                                 &entry_code);
+> 			if (dkim_stat == DKIM_STAT_NORESOURCE)
+> 			{
+> 				printf("\twarn: list of canonicalizations "
+> 				       "is not available\n");
+> 			}
+> 			else
+> 			{
+> 				while(dkim_stat == DKIM_STAT_OK)
+> 				{
+> 					printf("\t\t%s\n", entry_name);
+> 					dkim_stat = dkim_nametable_next(iter_ctx,
+> 					                                &entry_name,
+> 					                                &entry_code);
+> 				}
+> 				dkim_stat = dkim_iter_ctx_free(iter_ctx);
+> 				/* we can do nothing eveif dkim_stat is not
+> 				   DKIM_STAT_OK ... */
+> 			}
+16948a17042,17044
+> #ifdef USE_LUA
+> 		if (curconf->conf_redirect != NULL || curconf->conf_finalscript != NULL)
+> #else /* USE_LUA */
+16949a17046
+> #endif /* USE_LUA */
+16966a17064,17066
+> #ifdef USE_LUA
+> 		    curconf->conf_finalscript != NULL ||
+> #endif /* USE_LUA */
+16969a17070,17072
+> #ifdef USE_LUA
+> 		if (curconf->conf_capture || curconf->conf_finalscript != NULL)
+> #else /* USE_LUA */
+16970a17074
+> #endif /* USE_LUA */
+17023c17127
+< 		if (dolog)
+---
+> 		if (curconf->conf_allowsha1only)
+17025,17026c17129,17133
+< 			syslog(LOG_ERR,
+< 			       "verifier mode operating without rsa-sha256 support; terminating");
+---
+> 			if (dolog)
+> 			{
+> 				syslog(LOG_WARNING,
+> 				       "WARNING: verifier mode operating without rsa-sha256 support");
+> 			}
+17027a17135,17141
+> 		else
+> 		{
+> 			if (dolog)
+> 			{
+> 				syslog(LOG_ERR,
+> 				       "verifier mode operating without rsa-sha256 support; terminating");
+> 			}
+17029,17031c17143,17145
+< 		fprintf(stderr,
+< 		        "%s: verify mode requires rsa-sha256 support\n",
+< 		        progname);
+---
+> 			fprintf(stderr,
+> 			        "%s: verify mode requires rsa-sha256 support\n",
+> 			        progname);
+17033,17034c17147,17148
+< 		if (!autorestart && pidfile != NULL)
+< 			(void) unlink(pidfile);
+---
+> 			if (!autorestart && pidfile != NULL)
+> 				(void) unlink(pidfile);
+17036c17150,17151
+< 		return EX_CONFIG;
+---
+> 			return EX_CONFIG;
+> 		}
+Only in projects/opendkim/opendkim: opendkim.conf.5
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim.conf.5.in /tmp/OpenDKIM/opendkim/opendkim.conf.5.in
+50a51,56
+> .I AllowSHA1Only (Boolean)
+> Permit verify mode when only SHA1 support is available.  RFC6376 requires
+> that verifiers implement both SHA1 and SHA256 support.  Setting this
+> feature changes the absence of SHA256 support from an error to a warning.
+> 
+> .TP
+176a183,187
+> .I CheckSigningTable (Boolean)
+> If set to yes, it walks the SigningTable when loading the config file
+> to check for missing keys in KeyTable.  The default is yes.
+> 
+> .TP
+346c357,358
+< and (c) either a private key or a path to a file containing a private key.
+---
+> and (c) either a private key or a path to a file containing a private key;
+> (d) (optional) signing algorithm to use with this key.
+354c366,372
+< the apparent domain name of the sender.  The
+---
+> the apparent domain name of the sender.  The fourth field should be one
+> of supported siginig algorithms (see
+> .I SignatureAlgorithm
+> below).
+> If it is omited, the algorithm specified in
+> .I SignatureAlgorithm
+> is used for the key.
+935c953
+< Use 'opendkim \-V' to see the list of supported algorithms (Ed25519 is supported).
+---
+> Use 'opendkim \-V' to see the list of supported algorithms.
+938c956,957
+<  .
+---
+> if it is available, otherwise it will be
+> .I rsa-sha1.
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-config.h /tmp/OpenDKIM/opendkim/opendkim-config.h
+26a27
+> 	{ "AllowSHA1Only",		CONFIG_TYPE_BOOLEAN,	FALSE },
+45a47
+> 	{ "CheckSigningTable",		CONFIG_TYPE_BOOLEAN,	FALSE },
+148a151
+> 	{ "ReplaceHeaders",		CONFIG_TYPE_STRING,	FALSE },
+Only in projects/opendkim/opendkim: opendkim-config.o
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim.conf.sample /tmp/OpenDKIM/opendkim/opendkim.conf.sample
+7,8d6
+< ## Copyright 2025 OpenDKIM contributors.
+< ##
+13a12,29
+> ## DEPRECATED CONFIGURATION OPTIONS
+> ## 
+> ## The following configuration options are no longer valid.  They should be
+> ## removed from your existing configuration file to prevent potential issues.
+> ## Failure to do so may result in opendkim being unable to start.
+> ## 
+> ## Removed in 2.10.0:
+> ##   AddAllSignatureResults
+> ##   ADSPAction
+> ##   ADSPNoSuchDomain
+> ##   BogusPolicy
+> ##   DisableADSP
+> ##   LDAPSoftStart
+> ##   LocalADSP
+> ##   NoDiscardableMailTo
+> ##   On-PolicyError
+> ##   SendADSPReports
+> ##   UnprotectedPolicy
+16a33,46
+> ##  AllowSHA1Only { yes | no }
+> ##  	default "no"
+> ##
+> ##  By default, the filter will refuse to start if support for SHA256 is
+> ##  not available since this violates the strong recommendations of
+> ##  RFC6376 Section 3.3, which says:
+> ##
+> ##  "Verifiers MUST implement both rsa-sha1 and rsa-sha256.  Signers MUST
+> ##   implement and SHOULD sign using rsa-sha256."
+> ##
+> ##  This forces that violation to be explicitly selected by the administrator.
+> 
+> # AllowSHA1Only		no
+> 
+101a132,140
+> ##  CheckSigningTable  { yes | no }
+> ##  	default "yes"
+> ##
+> ##  If set, the SigningTable will be checked for missing keys in
+> ##  KeyTable when loading the config. This can take a longer time with 
+> ##  larger databases. Requires opendbx.
+> 
+> # CheckSigningTable		yes
+> 
+218c257
+< # KeyFile			/etc/opendkim/keys/example.private
+---
+> KeyFile			/var/db/dkim/example.private
+405c444
+< # PidFile		/run/opendkim/opendkim.pid
+---
+> # PidFile		filename
+567c606
+< ##  "rsa-sha256", or "ed25519-sha256".
+---
+> ##  "rsa-sha1", "rsa-sha256", or "ed25519-sha256".
+631c670
+< Socket			unix:/run/opendkim/opendkim.sock
+---
+> Socket			inet:port@localhost
+731c770
+< UMask			002
+---
+> # UMask			022
+Only in projects/opendkim/opendkim: opendkim.conf.simple
+Only in projects/opendkim/opendkim: opendkim.conf.simple-verify
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-db.c /tmp/OpenDKIM/opendkim/opendkim-db.c
+5808a5809,5836
+> **  DKIMF_DB_CAN_WALK -- check if the db supports dkimf_db_walk operation
+> **
+> **  Parameters:
+> **  	db -- database
+> **
+> **  Return value:
+> **  	TRUE  -- suppots
+> **  	FALSE -- does not support
+> */
+> 
+> _Bool
+> dkimf_db_can_walk(DKIMF_DB db)
+> {
+> 	assert(db != NULL);
+> 
+> 	switch (db->db_type)
+> 	{
+> 	  case DKIMF_DB_TYPE_REFILE:
+> 	  case DKIMF_DB_TYPE_SOCKET:
+> 	  case DKIMF_DB_TYPE_LUA:
+> 	  case DKIMF_DB_TYPE_MEMCACHE:
+> 	  case DKIMF_DB_TYPE_UNKNOWN:
+> 		return FALSE;
+> 	}
+> 	return TRUE;
+> }
+> 
+> /*
+5835,5839d5862
+< 	if (db->db_type == DKIMF_DB_TYPE_REFILE ||
+< 	    db->db_type == DKIMF_DB_TYPE_SOCKET ||
+< 	    db->db_type == DKIMF_DB_TYPE_LUA)
+< 		return -1;
+< 
+5841a5865,5872
+> 	  case DKIMF_DB_TYPE_REFILE:
+> 	  case DKIMF_DB_TYPE_SOCKET:
+> 	  case DKIMF_DB_TYPE_LUA:
+> 	  case DKIMF_DB_TYPE_MEMCACHE:
+> 	  {
+> 		/* This operation does not support these type of dbs. */
+> 		return -1;
+> 	  }
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-db.h /tmp/OpenDKIM/opendkim/opendkim-db.h
+96a97
+> extern _Bool dkimf_db_can_walk __P((DKIMF_DB));
+Only in projects/opendkim/opendkim: opendkim-flowrate.o
+Only in projects/opendkim/opendkim: opendkim-genkey
+Only in projects/opendkim/opendkim: opendkim-genkey.8
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-genkey.in /tmp/OpenDKIM/opendkim/opendkim-genkey.in
+8,9d7
+< ## Copyright 2025 OpenDKIM Contributors.
+< ##
+133d130
+< ## Check if ed25519 is supported.
+136,142c133,138
+<     # Test if OpenSSL actually supports Ed25519 by trying to generate a key
+<     $status = system("openssl genpkey -algorithm Ed25519 -out /dev/null 2>/dev/null");
+<     if ($status != 0)
+<     {
+<         print STDERR "$progname: OpenSSL with Ed25519 support is required for ED25519 support\n";
+<         exit(1);
+<     }
+---
+> 	$status = system("openssl genpkey -algorithm ed25519 2> /dev/null | grep -q -w 'BEGIN PRIVATE KEY'");
+> 	if ($status != 0)
+> 	{
+> 		print STDERR "$progname: OpenSSL 1.1.1 or newer is required for ED25519 support\n";
+> 		exit(1);
+> 	}
+Only in projects/opendkim/opendkim: opendkim-genzone
+Only in projects/opendkim/opendkim: opendkim-genzone.8
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-genzone.c /tmp/OpenDKIM/opendkim/opendkim-genzone.c
+3,4d2
+< **
+< **  Copyright 2025 OpenDKIM Contributors.
+31d28
+< # include <openssl/rsa.h>
+269d265
+< 	RSA *rsa;
+842,843c838
+< 		#ifdef HAVE_ED25519
+< 		if (EVP_PKEY_id(pkey) == EVP_PKEY_ED25519)
+---
+> 		if (EVP_PKEY_base_id(pkey) != EVP_PKEY_RSA)
+845,857c840,845
+< 			/* Handle Ed25519 keys - use generic PUBKEY functions */
+< 			status = PEM_write_bio_PUBKEY(outbio, pkey);
+< 			if (status == 0)
+< 			{
+< 				fprintf(stderr,
+< 						"%s: PEM_write_bio_PUBKEY() failed\n",
+< 						progname);
+< 				(void) dkimf_db_close(db);
+< 				(void) BIO_free(private);
+< 				(void) EVP_PKEY_free(pkey);
+< 				(void) BIO_free(outbio);
+< 				return 1;
+< 			}
+---
+> 			fprintf(stderr, "%s: not an RSA key\n", progname);
+> 			(void) dkimf_db_close(db);
+> 			(void) BIO_free(private);
+> 			(void) EVP_PKEY_free(pkey);
+> 			(void) BIO_free(outbio);
+> 			return 1;
+859,860c847,850
+< 		else
+< 			#endif /* HAVE_ED25519 */
+---
+> 
+> 		/* convert private to public */
+> 		status = PEM_write_bio_PUBKEY(outbio, pkey);
+> 		if (status == 0)
+862,887c852,859
+< 			/* Handle RSA keys - use RSA-specific functions */
+< 			rsa = EVP_PKEY_get1_RSA(pkey);
+< 			if (rsa == NULL)
+< 			{
+< 				fprintf(stderr,
+< 						"%s: EVP_PKEY_get1_RSA() failed\n",
+< 						progname);
+< 				(void) dkimf_db_close(db);
+< 				(void) BIO_free(private);
+< 				(void) EVP_PKEY_free(pkey);
+< 				(void) BIO_free(outbio);
+< 				return 1;
+< 			}
+< 			/* convert private to public */
+< 			status = PEM_write_bio_RSA_PUBKEY(outbio, rsa);
+< 			if (status == 0)
+< 			{
+< 				fprintf(stderr,
+< 						"%s: PEM_write_bio_RSA_PUBKEY() failed\n",
+< 						progname);
+< 				(void) dkimf_db_close(db);
+< 				(void) BIO_free(private);
+< 				(void) EVP_PKEY_free(pkey);
+< 				(void) BIO_free(outbio);
+< 				return 1;
+< 			}
+---
+> 			fprintf(stderr,
+> 			        "%s: PEM_write_bio_PUBKEY() failed\n",
+> 			        progname);
+> 			(void) dkimf_db_close(db);
+> 			(void) BIO_free(private);
+> 			(void) EVP_PKEY_free(pkey);
+> 			(void) BIO_free(outbio);
+> 			return 1;
+Only in projects/opendkim/opendkim: opendkim_genzone-config.o
+Only in projects/opendkim/opendkim: opendkim_genzone-opendkim-db.o
+Only in projects/opendkim/opendkim: opendkim_genzone-opendkim-genzone.o
+Only in projects/opendkim/opendkim: opendkim_genzone-opendkim-lua.o
+Only in projects/opendkim/opendkim: opendkim_genzone-util.o
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim.h /tmp/OpenDKIM/opendkim/opendkim.h
+122a123
+> 	dkim_alg_t		srq_signalg;
+Only in projects/opendkim/opendkim: opendkim-lua.3
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-lua.c /tmp/OpenDKIM/opendkim/opendkim-lua.c
+3,8d2
+< **
+< **  Copyright 2025 OpenDKIM contributors.
+< */
+< 
+< /* Note: This file currently works with Lua5.1 through Lua5.4.
+< ** Checked in September 2025.
+Only in projects/opendkim/opendkim: opendkim-opendkim-arf.o
+Only in projects/opendkim/opendkim: opendkim-opendkim-ar.o
+Only in projects/opendkim/opendkim: opendkim-opendkim-crypto.o
+Only in projects/opendkim/opendkim: opendkim-opendkim-db.o
+Only in projects/opendkim/opendkim: opendkim-opendkim-dns.o
+Only in projects/opendkim/opendkim: opendkim-opendkim-lua.o
+Only in projects/opendkim/opendkim: opendkim-opendkim.o
+Only in projects/opendkim/opendkim: opendkim-reputation.o
+Only in projects/opendkim/opendkim: opendkim-spam.1
+Only in projects/opendkim/opendkim: opendkim-stats.8
+Only in projects/opendkim/opendkim: opendkim-stats.o
+Only in projects/opendkim/opendkim: opendkim-testkey
+Only in projects/opendkim/opendkim: opendkim-testkey.8
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-testkey.c /tmp/OpenDKIM/opendkim/opendkim-testkey.c
+238a239,241
+> 	char signalgstr[BUFRSZ];
+> 	dkim_alg_t default_signalg;
+> 	dkim_alg_t signalg;
+344a348,367
+> 		p = NULL;
+> 		(void) config_get(cfg, "SignatureAlgorithm", &p, sizeof p);
+> 		if (p != NULL)
+> 		{
+> 			default_signalg = (dkim_alg_t)
+> 			                  dkim_name_to_code(dkim_table_algorithms,
+> 			                                    p);
+> 			if (default_signalg == -1)
+> 			{
+> 				fprintf(stderr,
+> 				        "%s: %s: Unknown SignatureAlgorithm %s\n",
+> 				        progname, path, p);
+> 				return EX_CONFIG;
+> 			}
+> 		}
+> 		else
+> 		{
+> 			default_signalg = DKIM_SIGN_RSASHA256;
+> 		}
+> 
+467c490
+< 		struct dkimf_db_data dbd[3];
+---
+> 		struct dkimf_db_data dbd[4];
+493a517
+> 			memset(signalgstr, '\0', sizeof signalgstr);
+500a525,527
+> 			dbd[3].dbdata_buffer = signalgstr;
+> 			dbd[3].dbdata_buflen = sizeof signalgstr;
+> 			dbd[3].dbdata_flags = DKIMF_DB_DATA_OPTIONAL;
+505c532
+< 			                       dbd, 3);
+---
+> 			                       dbd, 4);
+526a554,578
+> 			if (signalgstr[0] != '\0')
+> 			{
+> 				signalg = (dkim_alg_t)dkim_name_to_code(dkim_table_algorithms,
+> 				                                        signalgstr);
+> 				if (signalg == -1)
+> 				{
+> 					fprintf(stderr,
+> 					        "%s: unknown sign algorithm "
+> 					        "'%s' for key '%s'\n",
+> 					        progname, signalgstr, keyname);
+> 					return 1;
+> 				}
+> 
+> 				if (verbose > 1)
+> 				{
+> 					fprintf(stderr,
+> 				        "%s: key '%s': sign algorithm is '%s'\n",
+> 				        progname, keyname, signalgstr);
+> 				}
+> 			}
+> 			else
+> 			{
+> 				signalg = default_signalg;
+> 			}
+> 
+577,579c629,631
+< 			status = dkim_test_key(lib, selector, domain,
+< 			                       keypath, keylen, &dnssec,
+< 			                       err, sizeof err);
+---
+> 			status = dkim_test_key2(lib, selector, domain,
+> 			                        keypath, keylen, signalg,
+> 			                        &dnssec, err, sizeof err);
+Only in projects/opendkim/opendkim: opendkim_testkey-config.o
+Only in projects/opendkim/opendkim: opendkim_testkey-opendkim-crypto.o
+Only in projects/opendkim/opendkim: opendkim_testkey-opendkim-db.o
+Only in projects/opendkim/opendkim: opendkim_testkey-opendkim-dns.o
+Only in projects/opendkim/opendkim: opendkim_testkey-opendkim-lua.o
+Only in projects/opendkim/opendkim: opendkim_testkey-opendkim-testkey.o
+Only in projects/opendkim/opendkim: opendkim_testkey-util.o
+Only in projects/opendkim/opendkim: opendkim-testmsg
+Only in projects/opendkim/opendkim: opendkim-testmsg.8
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/opendkim-testmsg.c /tmp/OpenDKIM/opendkim/opendkim-testmsg.c
+123c123
+< 	dkim_alg_t sa = DKIM_SIGN_RSASHA256;
+---
+> 	dkim_alg_t sa = DKIM_SIGN_RSASHA1;
+Only in projects/opendkim/opendkim: opendkim_testmsg-opendkim-testmsg.o
+Only in projects/opendkim/opendkim: opendkim-test.o
+Only in projects/opendkim/opendkim: opendkim-util.o
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/screen.lua.sample /tmp/OpenDKIM/opendkim/screen.lua.sample
+27c27
+< 	sig = odkim.get_signhandle(ctx, n)
+---
+> 	sig = odkim.get_sighandle(ctx, n - 1)
+Only in projects/opendkim/opendkim/tests: Makefile
+Only in projects/opendkim/opendkim/tests: Makefile.in
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/opendkim/tests/t-sign-rs-tables-bad.conf /tmp/OpenDKIM/opendkim/tests/t-sign-rs-tables-bad.conf
+8c8
+< SigningTable		file:t-sign-rs-tables.sign
+---
+> SigningTable		refile:t-sign-rs-tables.sign
+Only in /tmp/OpenDKIM: README
+Only in projects/opendkim: README.md
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/RELEASE_NOTES /tmp/OpenDKIM/RELEASE_NOTES
+6,24d5
+< 3.0.0-beta1	2025/09/18
+< 	Major Changes (Breaking)
+< 		Removed SHA1 support entirely - SHA256 is now required.
+< 		Modernized to OpenSSL 3.0 EVP API - Eliminates deprecation warnings.
+< 		ATPS updated to SHA256-only - No more SHA1 fallback.
+< 		Minimum OpenSSL version increased - Requires version with guaranteed SHA256.
+< 		Ed25519 now fully supported, also in testing.
+< 
+< 	Beta Release Warning
+< 		This is a beta release with significant cryptographic changes.
+< 		Test thoroughly before deploying to production mail servers.
+< 
+< 	Migration Notes
+< 		Review configurations that may have explicitly used SHA1.
+< 		Ensure OpenSSL version meets new requirements.
+< 		ATPS zones may need regeneration with SHA256 hashes.
+< 
+< ## Known Issues
+< - Some OpenSSL deprecation warnings remain (will be fixed in future betas)
+34a16,24
+> 	Upgrade to OpenSSL 3. Using non-deprecated APIs in OpenSSL 3, but
+> 		already present in OpenSSL 1.1.1. Patch by David Bürgin
+> 		(PR #162)
+> 	Extend KeyTable to specify signing algorithm.
+> 		Patch from Yasuhito Futatsuki. (PR #202)
+> 	Add config file option CheckSigningTable to determine if it check
+> 		the content of SigningTable on loading config file,
+> 		and command line option to force turning on/off the option.
+> 		Patch from @r-a-z-v-a-n on GitHub (PR #228)
+46a37,39
+> 	Fix issue #222: When the "Minimum" option is set, don't treat
+> 		empty body as partial. Patch from Yasuhito FUTATSUKI
+> 		(PR #223).
+51a45,86
+> 	Fix issue #24: Insert initial headers like Authentication-Results
+> 		before the MTA’s Received header. Patch from @fanto666
+> 		on GitHub, PR by David Bürgin (PR #126).
+> 	Fix issue #128: Reorder mlfi_close logic fixing use-after-free error
+> 		Reported by @apircalabu on GitHub, Patch by David Bürgin
+> 		(PR #129).
+> 	Fix issue #148: Delete Authentication-Results headers in reverse.
+> 		This fixes the bug on "KeepAuthResults = no" that opendkim
+> 		cannot remove headers correctly (CVE-2022-48521).
+> 		Patch from David Bürgin (PR #189).
+> 	Fix an issue on DNS query on getting public key, it had failed if
+> 		the response contained DNAME type RR. Patch from
+> 		Andreas Jobs (PR #156)
+> 	Fix a bug in Lua script interface, fix stack level after register
+> 		odkim functions when using Lua >= 5.2. Patch from
+> 		Yasuhito Futatsuki. (PR #201)
+> 	Fix function signature of vbr_strlcpy in libvbr Patch from
+> 		Michael Orlitzky (PR #171).
+> 	Fix sample script screen.lua.sample, off-by-one error and
+> 		typo in function name. Patch from link2xt (PR #195)
+> 	Fix AR header parser so that accept "no-result" result
+> 		as a valid syntax. Patch from Yasuhito Futatsuki (PR #205)
+> 	Fix issue #191: odkim.del_header should delete the actual requested
+> 		header number. Patch by Benoit Branciard (PR #212).
+> 	Fix issue #213: The Lua final policy script functions odkim.add_rcpt,
+> 		odkim.del_rcpt, odkim.del_header and odkim.quarantine
+> 		can actually work regardless of other configuration
+> 		parameters. Patch from Benoit Branciard (PR #211).
+> 	Fix a bug on usage of struct dkimf_dstring type in mlfi_eoh().
+> 		Patch from Michael Orlitzky (PR #214).
+> 	Fix crash on config load when specify a memchache as SigningTable.
+> 		Patch from Yasuhito Futatsuki (PR #219).
+> 	Fix issue #229: The consistency check of SigningTable and KeyTable
+> 		on loading config load work correctly.
+> 		Patch from Yasuhito Futatsuki (PR #230).
+> 	Avoid undefined behavior of strlcpy, which resulting improperly
+> 		signing when using the SubDomains feature in some environment.
+> 		Patch from @aafbsd on Github (PR #239)
+> 	Fix issue #233: use "dkim=policy" for the result of DKIM signature
+> 		which is marked as "ignore" by dkim_sig_ignore(), instead of
+> 		"dikim=fail".
+> 		Patch from Yasuhito Futatsuki (PR #234).
+53a89,91
+> 	CONFIG: Add missing ReplaceHeaders definition. Patch from
+>                 Toby Ovod-Everett, Reported again by Harald Dunkel,
+> 		GitHub PR by David Bürgin (SF bug #257; PR #125)
+55a94,95
+> 	CONTRIB: Remove uses of twisted.internet.defer.returnValue
+> 		in contrib/repute.  Patch from Povilas Kanapickas (PR #237)
+70a111,128
+> 	LIBOPENDKIM: Fix implicit function declaration for snprintf.
+> 		Patch from Michael Orlitzky (PR #170).
+> 	LIBOPENDKIM: Expose conversion table between internal code already
+> 		provided as DKIM_ macros and their literal name in C string.
+> 		Patch from Yasuhito Futatsuki (PR #207).
+> 	LIBOPENDKIM: Extend dkim_test_key() to allow testing a ed25519 key,
+> 		as dkim_test_key2(). For API compatibility, function interface
+> 		of dkim_test_key() is not changed, but it only calls
+> 		dkim_test_key2(). Patch from Yasuhito Futatsuki (PR #208).
+> 	BUILD: Fix function signature of main() in configure. Patch from
+> 		Michael Orlitzky (PR #171).
+> 	BUILD: Fix pkgconfig names of Cyrus SASL and OpenLDAP in configure.
+> 		Patch from Michael Orlitzky (PR #192).
+> 	BUILD: Fix issue #203: include header files required by resolv.h
+> 		before use it in res_ninit detection in configure.
+> 		Patch from Yasuhito Futatsuki (PR #204).
+> 	BUILD: libvbr/vbr.c: include <stdio.h> for vsnprintf().
+> 		Patch from Michael Orlitzky (PR #220).
+72a131,136
+> 	TOOLS: opendkim-genkey: Use a functional test for OpenSSL ed25519
+> 		support rather than a hardcoded openssl version check, for
+> 		openssl 3.0+ compatibility. Patch from Geert Hendrickx.
+> 		(PR #135)
+> 	TOOLS: issue #183: On opendkim-testkey, add support for ed25519 keys.
+> 		Patch from Yasuhito Futatsuki (PR #208).
+Only in projects/opendkim/reprrd: .deps
+Only in projects/opendkim/reprrd: Makefile
+Only in projects/opendkim/reprrd: Makefile.in
+Only in projects/opendkim/reprrd: opendkim-reprrdimport
+Only in projects/opendkim/reprrd: opendkim-reprrdimport.8
+diff '--color=auto' -r '--exclude=.git' projects/opendkim/reprrd/reprrd.c /tmp/OpenDKIM/reprrd/reprrd.c
+30,34d29
+< /* libbsd if found */
+< #ifdef USE_BSD_H
+< # include <bsd/string.h>
+< #endif /* USE_BSD_H */
+< 
+Only in projects/opendkim/reprrd: reprrd.pc
+Only in projects/opendkim/reputation: .deps
+Only in projects/opendkim/reputation: Makefile
+Only in projects/opendkim/reputation: Makefile.in
+Only in projects/opendkim/reputation: opendkim-genrates
+Only in projects/opendkim/reputation: opendkim-genrates.8
+Only in projects/opendkim/reputation: opendkim-modtotals
+Only in projects/opendkim/reputation: opendkim-modtotals.8
+Only in projects/opendkim/reputation: opendkim-rephistory
+Only in projects/opendkim/reputation: opendkim-rephistory.8
+Only in projects/opendkim/reputation: repute.pc
+Only in projects/opendkim: stamp-h1
+Only in projects/opendkim/stats: .deps
+Only in projects/opendkim/stats: Makefile
+Only in projects/opendkim/stats: Makefile.in
+Only in projects/opendkim/stats: opendkim-expire
+Only in projects/opendkim/stats: opendkim-expire.8
+Only in projects/opendkim/stats: opendkim-gengraphs
+Only in projects/opendkim/stats: opendkim-gengraphs.8
+Only in projects/opendkim/stats: opendkim-genstats
+Only in projects/opendkim/stats: opendkim-genstats.8
+Only in projects/opendkim/stats: opendkim-importstats.8
+Only in projects/opendkim/stats: opendkim-reportstats
