@@ -4,6 +4,8 @@
 # Copyright (c) 2009-2015, 2018, The Trusted Domain Project.
 #   All rights reserved.
 #
+# Copyright 2025 OpenDKIM contributors.
+#
 
 #
 # Setup
@@ -1650,7 +1652,8 @@ AC_ARG_WITH([sql-backend],
                            [selection of SQL backend in use]),
             [SQL_BACKEND="$withval"], [SQL_BACKEND="mysql"])
 AC_SUBST(SQL_BACKEND)
-AC_DEFINE_UNQUOTED(SQL_BA
+AC_DEFINE_UNQUOTED(SQL_BACKEND, "$SQL_BACKEND", [SQL backend in use])
+
 #
 # libodbx
 #
