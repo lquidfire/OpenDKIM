@@ -167,6 +167,7 @@ struct dkim_hash     // Renamed from dkim_sha256
 	int                hash_tmpfd;
 	BIO *              hash_tmpbio;
 	EVP_MD_CTX *       hash_ctx;        // Renamed from sha256_ctx
+	u_int              hash_outlen;
 	u_char             hash_out[EVP_MAX_MD_SIZE];  // Renamed from sha256_out
 };
 #endif /* USE_GNUTLS */

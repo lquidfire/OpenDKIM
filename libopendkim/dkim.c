@@ -267,7 +267,7 @@ const u_char *dkim_required_signhdrs[] =
 /* ========================= PRIVATE SECTION ========================= */
 
 /*
-**  DKIM_SET_FREE -- destroy a DKIM_SET 
+**  DKIM_SET_FREE -- destroy a DKIM_SET
 **
 **  Parameters:
 **  	dkim -- DKIM context
@@ -764,7 +764,7 @@ dkim_process_set(DKIM *dkim, dkim_set_t type, u_char *str, size_t len,
 			}
 		}
 		break;
-		
+
 	  case DKIM_SETTYPE_SIGNATURE:
 		/* make sure required stuff is here */
 		if (dkim_param_get(set, (u_char *) "s") == NULL ||
@@ -871,7 +871,7 @@ dkim_process_set(DKIM *dkim, dkim_set_t type, u_char *str, size_t len,
 		if (value != NULL)
 		{
 			char *d;
-		
+
 			d = dkim_param_get(set, (u_char *) "d");
 
 			if (strcasecmp(value, d) == 0)
@@ -886,7 +886,7 @@ dkim_process_set(DKIM *dkim, dkim_set_t type, u_char *str, size_t len,
 			}
 		}
 #endif /* _FFR_CONDITIONAL */
-		
+
 		/* test validity of "t" and "x" */
 		value = dkim_param_get(set, (u_char *) "t");
 		if (value != NULL)
@@ -1005,7 +1005,7 @@ dkim_process_set(DKIM *dkim, dkim_set_t type, u_char *str, size_t len,
 		}
 
 		break;
-			
+
 	  default:
 		assert(0);
 	}
@@ -1205,7 +1205,7 @@ dkim_privkey_load(DKIM *dkim)
 	}
 #endif /* USE_GNUTLS */
 
-#ifdef USE_GNUTLS 
+#ifdef USE_GNUTLS
 	status = gnutls_x509_privkey_init(&crypto->crypto_key);
 	if (status != GNUTLS_E_SUCCESS)
 	{
@@ -2523,7 +2523,7 @@ dkim_gensighdr(DKIM *dkim, DKIM_SIGINFO *sig, struct dkim_dstring *dstr,
 		format = "v=%s;%sa=%s;%sc=%s/%s;%sd=%s;%ss=%s;%st=%llu";
 	else if (sizeof(sig->sig_timestamp) == sizeof(unsigned long))
 		format = "v=%s;%sa=%s;%sc=%s/%s;%sd=%s;%ss=%s;%st=%lu";
-	else 
+	else
 		format = "v=%s;%sa=%s;%sc=%s/%s;%sd=%s;%ss=%s;%st=%u";
 
 	v = DKIM_VERSION_SIG;
@@ -3306,7 +3306,7 @@ dkim_headercheck(DKIM *dkim)
 
 /*
 **  DKIM_EOH_SIGN -- declare end-of-headers; prepare for signing
-** 
+**
 **  Parameters:
 **  	dkim -- DKIM handle
 **
@@ -3451,7 +3451,7 @@ dkim_eoh_sign(DKIM *dkim)
 
 /*
 **  DKIM_EOH_VERIFY -- declare end-of-headers; set up verification
-** 
+**
 **  Parameters:
 **  	dkim -- DKIM handle
 **
@@ -4515,7 +4515,7 @@ dkim_init(void *(*caller_mallocf)(void *closure, size_t nbytes),
 	libhandle->dkiml_skipre = FALSE;
 	libhandle->dkiml_malloc = caller_mallocf;
 	libhandle->dkiml_free = caller_freef;
-	strlcpy((char *) libhandle->dkiml_tmpdir, (char *) td, 
+	strlcpy((char *) libhandle->dkiml_tmpdir, (char *) td,
 	        sizeof libhandle->dkiml_tmpdir);
 	libhandle->dkiml_flags = DKIM_LIBFLAGS_DEFAULT;
 	libhandle->dkiml_timeout = DEFTIMEOUT;
@@ -4547,7 +4547,7 @@ dkim_init(void *(*caller_mallocf)(void *closure, size_t nbytes),
 	libhandle->dkiml_dns_start = dkim_res_query;
 	libhandle->dkiml_dns_cancel = dkim_res_cancel;
 	libhandle->dkiml_dns_waitreply = dkim_res_waitreply;
-	
+
 #define FEATURE_INDEX(x)	((x) / (8 * sizeof(u_int)))
 #define FEATURE_OFFSET(x)	((x) % (8 * sizeof(u_int)))
 #define FEATURE_ADD(lib,x)	(lib)->dkiml_flist[FEATURE_INDEX((x))] |= (1 << FEATURE_OFFSET(x))
@@ -4615,7 +4615,7 @@ dkim_close(DKIM_LIB *lib)
 
 	if (lib->dkiml_skipre)
 		(void) regfree(&lib->dkiml_skiphdrre);
-	
+
 	if (lib->dkiml_signre)
 		(void) regfree(&lib->dkiml_hdrre);
 
@@ -4632,7 +4632,7 @@ dkim_close(DKIM_LIB *lib)
 
 	if (lib->dkiml_dns_close != NULL && lib->dkiml_dns_service != NULL)
 		lib->dkiml_dns_close(lib->dkiml_dns_service);
-	
+
 	free((void *) lib);
 
 #ifndef USE_GNUTLS
@@ -6045,7 +6045,7 @@ dkim_sig_process(DKIM *dkim, DKIM_SIGINFO *sig)
 				int c;
 				DKIM_SIGINFO *csig;
 
-				/* find every match */ 
+				/* find every match */
 				found = FALSE;
 
 				for (c = 0; c < dkim->dkim_sigcount; c++)
@@ -6693,7 +6693,7 @@ dkim_header(DKIM *dkim, u_char *hdr, size_t len)
 
 /*
 **  DKIM_EOH -- declare end-of-headers
-** 
+**
 **  Parameters:
 **  	dkim -- DKIM handle
 **
@@ -6936,7 +6936,7 @@ dkim_chunk(DKIM *dkim, u_char *buf, size_t buflen)
 				dkim->dkim_chunksm = 0;
 			}
 			break;
-			
+
 		  case 2:
 			if (DKIM_ISLWSP(*p))
 			{
@@ -6966,7 +6966,7 @@ dkim_chunk(DKIM *dkim, u_char *buf, size_t buflen)
 				break;
 			}
 			/* FALLTHROUGH */
-				
+
 		  case 3:
 			if (*p == '\n')
 			{
@@ -7385,7 +7385,7 @@ dkim_getsighdr_d(DKIM *dkim, size_t initial, u_char **buf, size_t *buflen)
 						                  n);
 						x += n;
 						len += n;
-						
+
 					}
 				}
 				else
@@ -7502,7 +7502,7 @@ dkim_sig_hdrsigned(DKIM_SIGINFO *sig, u_char *hdr)
 			if (c1 == NULL)
 			{
 				start = hdrlist;
-				len = c2 - start; 
+				len = c2 - start;
 			}
 			else
 			{
@@ -7574,7 +7574,7 @@ dkim_sig_setdnssec(DKIM_SIGINFO *sig, int dnssec_status)
 {
 	assert(sig != NULL);
 
-	switch (dnssec_status) 
+	switch (dnssec_status)
 	{
 	  case DKIM_DNSSEC_BOGUS:
 	  case DKIM_DNSSEC_INSECURE:
@@ -9438,7 +9438,7 @@ dkim_add_querymethod(DKIM *dkim, const char *type, const char *options)
 		           strlen(type) + 1);
 		return DKIM_STAT_NORESOURCE;
 	}
-		
+
 	if (options != NULL)
 	{
 		q->qm_options = dkim_strdup(dkim, tmp, 0);

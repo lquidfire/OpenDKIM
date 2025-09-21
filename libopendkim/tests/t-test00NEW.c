@@ -26,8 +26,7 @@
 
 #define	MAXHEADER	4096
 
-#define SIG2 "v=1; a=ed25519-sha256; c=relaxed/relaxed; d=example.com;\r\n\ts=test; t=1172620939;\r\n\tbh=QVUr2KBvm7/Q/ustiYzOlFMN9G8IMqBzUX81BdpjSDIAAAAAAAAAAAAAAAAAAAAA\r\n\t AAAAAAAAAAAAAAAAAAAAAA==;\r\n\th=Received:Received:Received:From:To:Date:Subject:Message-ID;\r\n\tb=aRhXxAR7DDJ548rrtS9LNkrcwm1DBB5/sLEcKFdQqvkkVy0ij9ms71638mwOqcL2M\r\n\t Vy4uilHbJTnlw2nQmllBQ=="
-
+#define SIG2 "v=1; a=ed25519-sha256; c=relaxed/relaxed; d=example.com;\r\n\ts=test; t=1172620939;\r\n\tbh=QVUr2KBvm7/Q/ustiYzOlFMN9G8IMqBzUX81BdpjSDI=;\r\n\th=Received:Received:Received:From:To:Date:Subject:Message-ID;\r\n\tb=PF5BP3YvTSe2qXANcjBD0nlAAYQymroJKWVnEstNYuM2g0+GtrIAmoYYV92fW1FAi\r\n\t /7ijAnRmMzSSaH6ZyK3Bw=="
 /*
 **  MAIN -- program mainline
 **

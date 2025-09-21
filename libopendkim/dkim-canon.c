@@ -349,7 +349,7 @@ dkim_canon_header_string(struct dkim_dstring *dstr, dkim_canon_t canon,
 
 				tmp = tmpbuf;
 			}
-			
+
 			if (*p == ':')
 			{
 				p++;
@@ -642,7 +642,7 @@ dkim_canon_init(DKIM *dkim, _Bool tmp, _Bool keep)
 				DKIM_FREE(dkim, sha);
 				return DKIM_STAT_INTERNAL;
 			}
-				
+
 			if (tmp)
 			{
 				status = dkim_tmpfile(dkim, &fd, keep);
@@ -663,6 +663,7 @@ dkim_canon_init(DKIM *dkim, _Bool tmp, _Bool keep)
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_hash *hash;
+			const EVP_MD *md = EVP_sha256();
 
 			hash = (struct dkim_hash *) DKIM_MALLOC(dkim,
 			                                            sizeof(struct dkim_hash));
@@ -675,17 +676,19 @@ dkim_canon_init(DKIM *dkim, _Bool tmp, _Bool keep)
 			}
 
 			memset(hash, '\0', sizeof(struct dkim_hash));
+			hash->hash_tmpfd = -1;  // Initialize temp file descriptor
 
-			/* Replace SHA256_Init with EVP initialization */
 			hash->hash_ctx = EVP_MD_CTX_new();
 			if (hash->hash_ctx == NULL ||
-			    EVP_DigestInit_ex(hash->hash_ctx, EVP_sha256(), NULL) != 1)
+				EVP_DigestInit_ex(hash->hash_ctx, md, NULL) != 1)
 			{
 				if (hash->hash_ctx != NULL)
 					EVP_MD_CTX_free(hash->hash_ctx);
 				DKIM_FREE(dkim, hash);
 				return DKIM_STAT_NORESOURCE;
 			}
+
+			hash->hash_outlen = EVP_MD_size(md);
 
 			if (tmp)
 			{
@@ -1344,10 +1347,9 @@ dkim_canon_runheaders(DKIM *dkim)
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_hash *hash;
-			unsigned int len;
 
 			hash = (struct dkim_hash *) cur->canon_hash;
-			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &len);
+			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &hash->hash_outlen);
 
 			if (hash->hash_tmpbio != NULL)
 				(void) BIO_flush(hash->hash_tmpbio);
@@ -1420,7 +1422,7 @@ dkim_canon_signature(DKIM *dkim, struct dkim_header *hdr)
 		tmphdr.hdr_next = NULL;
 		if (cur->canon_canon == DKIM_CANON_RELAXED)
 			dkim_lowerhdr(tmphdr.hdr_text);
-		
+
 		/* canonicalize the signature */
 		status = dkim_canon_header(dkim, cur, &tmphdr, FALSE);
 		if (status != DKIM_STAT_OK)
@@ -1464,10 +1466,9 @@ dkim_canon_signature(DKIM *dkim, struct dkim_header *hdr)
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_hash *hash;
-			unsigned int len;
 
 			hash = (struct dkim_hash *) cur->canon_hash;
-			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &len);
+			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &hash->hash_outlen);
 
 			if (hash->hash_tmpbio != NULL)
 				(void) BIO_flush(hash->hash_tmpbio);
@@ -1881,10 +1882,9 @@ dkim_canon_closebody(DKIM *dkim)
 		  case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_hash *hash;
-			unsigned int len;
 
 			hash = (struct dkim_hash *) cur->canon_hash;
-			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &len);
+			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &hash->hash_outlen);
 
 			if (hash->hash_tmpbio != NULL)
 				(void) BIO_flush(hash->hash_tmpbio);
@@ -1946,7 +1946,7 @@ dkim_canon_getfinal(DKIM_CANON *canon, u_char **digest, size_t *dlen)
 
 		hash = (struct dkim_hash *) canon->canon_hash;
 		*digest = hash->hash_out;
-		*dlen = sizeof hash->hash_out;
+		*dlen = hash->hash_outlen;
 
 		return DKIM_STAT_OK;
 	  }
