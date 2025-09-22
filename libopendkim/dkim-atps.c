@@ -54,7 +54,7 @@ extern void dkim_error __P((DKIM *, const char *, ...));
 
 #define	DKIM_ATPS_QUERYLENGTH	64
 #define	DKIM_ATPS_VALID		"v=ATPS1"
-
+#define MAXDIGEST		EVP_MAX_MD_SIZE
 
 /*
 **  DKIM_ATPS_CHECK -- check for Authorized Third Party Signing
