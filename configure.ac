@@ -1505,50 +1505,52 @@ lua_found="no"
 # Check for lua.pc - This is the norm across Operating Systems now.
 if test \( x"$luapath" = x"auto" -o x"$luapath" = x"yes" \) -a x"$PKG_CONFIG" != x""
 then
-  PKG_CHECK_MODULES([LIBLUA], [lua], [
-    LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
-    lua_found="yes"
-  ], [
-    # Fallback for systems with only versioned pkg-config files
-    PKG_CHECK_MODULES([LIBLUA], [lua5.4 lua5.3 lua5.2 lua5.1], [
+  lua_found="no"
+  for lua_version in lua lua5.4 lua5.3 lua5.2 lua5.1; do
+    if test x"$lua_found" = x"no"; then
+      PKG_CHECK_MODULES([LIBLUA], [$lua_version], [
         LIBLUA_INCDIRS="$LIBLUA_CFLAGS"
         lua_found="yes"
-    ], [
-        AC_MSG_WARN([pkg-config for lua not found, trying manual search...])
-    ])
-  ])
+        break
+      ], [:])
+    fi
+  done
+  if test x"$lua_found" = x"no"; then
+    AC_MSG_WARN([pkg-config for lua not found, trying manual search...])
+  fi
 fi
 
 # Manual search fallback for systems without pkg-config
 if test \( x"$luapath" = x"yes" -o x"$luapath" = x"auto" \) -a x"$lua_found" = x"no"
 then
     AC_MSG_CHECKING([for Lua headers manually])
-    luadirs="/usr /usr/local /opt/local"
-    lua_versions="5.4 5.3 5.2 5.1"
-
-    for d in $luadirs; do
-        # Check standard location first
-        if test -f $d/include/lua.h; then
-            AC_MSG_RESULT([$d (standard)])
-            LIBLUA_INCDIRS="-I$d/include"
-            LIBLUA_LIBDIRS="-L$d/lib"
-            LIBLUA_LIBS="-llua -lm"
-            lua_found="yes"
-            break
-        fi
-        # Check versioned directories
-        for ver in $lua_versions; do
-            if test -f $d/include/lua$ver/lua.h; then
-                AC_MSG_RESULT([$d (lua$ver)])
-                LIBLUA_INCDIRS="-I$d/include/lua$ver"
+    lua_found="no"
+    for d in /usr /usr/local /opt/local; do
+        if test x"$lua_found" = x"no"; then
+            # Check standard location first
+            if test -f $d/include/lua.h; then
+                AC_MSG_RESULT([$d (standard)])
+                LIBLUA_INCDIRS="-I$d/include"
                 LIBLUA_LIBDIRS="-L$d/lib"
-                LIBLUA_LIBS="-llua$ver -lm"
+                LIBLUA_LIBS="-llua -lm"
                 lua_found="yes"
-                break 2
+                break
             fi
-        done
+            # Check versioned directories
+            for ver in 5.4 5.3 5.2 5.1; do
+                if test x"$lua_found" = x"no"; then
+                    if test -f $d/include/lua$ver/lua.h; then
+                        AC_MSG_RESULT([$d (lua$ver)])
+                        LIBLUA_INCDIRS="-I$d/include/lua$ver"
+                        LIBLUA_LIBDIRS="-L$d/lib"
+                        LIBLUA_LIBS="-llua$ver -lm"
+                        lua_found="yes"
+                        break
+                    fi
+                fi
+            done
+        fi
     done
-
     if test x"$lua_found" = x"no"; then
         AC_MSG_ERROR([Lua headers not found. Install lua-dev/lua-devel or use --with-lua=PATH])
     fi
@@ -1558,40 +1560,34 @@ fi
 if test x"$luapath" != x"yes" -a x"$luapath" != x"auto" -a x"$luapath" != x"no"
 then
     AC_MSG_CHECKING([for Lua at $luapath])
+    lua_found="no"
+    # Try versioned subdirectories first, then standard location
+    for ver in 5.4 5.3 5.2 5.1 ""; do
+        if test x"$lua_found" = x"no"; then
+            if test -z "$ver"; then
+                # Standard location
+                header_path="$luapath/include/lua.h"
+                inc_dir="-I$luapath/include"
+                lib_name="-llua"
+                ver_desc="standard"
+            else
+                # Versioned subdirectory
+                header_path="$luapath/include/lua$ver/lua.h"
+                inc_dir="-I$luapath/include/lua$ver"
+                lib_name="-llua$ver"
+                ver_desc="lua$ver"
+            fi
 
-    # Define search patterns: "version:libname"
-    lua_patterns="5.4:-llua5.4 5.3:-llua5.3 5.2:-llua5.2 5.1:-llua5.1 .:-llua"
-
-    for pattern in $lua_patterns; do
-        ver="${pattern%:*}"
-        libname="${pattern#*:}"
-
-        if test "$ver" = "."; then
-            # Standard location
-            header_path="$luapath/include/lua.h"
-            inc_dir="-I$luapath/include"
-            lib_dir="-L$luapath/lib"
-        else
-            # Versioned subdirectory
-            header_path="$luapath/include/lua$ver/lua.h"
-            inc_dir="-I$luapath/include/lua$ver"
-            lib_dir="-L$luapath/lib"
-        fi
-
-        if test -f "$header_path"; then
-            if test "$ver" = "."; then
-		AC_MSG_RESULT([$luapath (standard)])
-	    else
-		AC_MSG_RESULT([$luapath (lua$ver)])
-	    fi
-            LIBLUA_INCDIRS="$inc_dir"
-            LIBLUA_LIBDIRS="$lib_dir"
-            LIBLUA_LIBS="$libname -lm"
-            lua_found="yes"
-            break
+            if test -f "$header_path"; then
+                AC_MSG_RESULT([$luapath ($ver_desc)])
+                LIBLUA_INCDIRS="$inc_dir"
+                LIBLUA_LIBDIRS="-L$luapath/lib"
+                LIBLUA_LIBS="$lib_name -lm"
+                lua_found="yes"
+                break
+            fi
         fi
     done
-
     if test x"$lua_found" = x"no"; then
         AC_MSG_ERROR([Lua not found at $luapath])
     fi
