@@ -1,21 +1,21 @@
 Source: opendkim
 Section: mail
 Priority: optional
-Maintainer: David Bürgin <dbuergin@gluet.ch>
+Maintainer: Edmund Lodewijks <edmund@proteamail.com>
 Build-Depends: debhelper-compat (= 13), pkgconf, libmilter-dev, libdb-dev,
  libunbound-dev [linux-any], libldap-dev, liblua5.3-dev, libbsd-dev,
  libopendbx1-dev [linux-any kfreebsd-any], libssl-dev, libsasl2-dev,
  libmemcached-dev
 Standards-Version: 4.6.2
 Homepage: http://www.opendkim.org/
-Vcs-Browser: https://salsa.debian.org/debian/opendkim
-Vcs-Git: https://salsa.debian.org/debian/opendkim.git
+Vcs-Browser: https://github.com/lquidfire/OpenDKIM
+Vcs-Git: https://github.com/lquidfire/OpenDKIM.git
 Rules-Requires-Root: no
 
 Package: opendkim
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Depends: libopendkim11 (= ${binary:Version}), ${shlibs:Depends},
+Depends: libopendkim12 (= ${binary:Version}), ${shlibs:Depends},
  ${misc:Depends}, adduser, dns-root-data
 Recommends: opendkim-tools
 Description: DomainKeys Identified Mail (DKIM) signing and verifying milter

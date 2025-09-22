@@ -15,7 +15,3 @@
 #rev-ares-deletion.patch
 #ares-missing-space.patch
 #ftbfs-gcc-14-1075339.patch
-configure-ac-fix-lua-detection-logic
-fix-missing-maxdigest-in-dkim-atps.c
-fix-rbl-c-type-mismatch
-dkim-atpszone-c-remove-double-else
