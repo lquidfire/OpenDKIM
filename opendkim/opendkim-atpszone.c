@@ -418,7 +418,6 @@ main(int argc, char **argv)
 			(void) gnutls_hash(sha, domain, strlen(domain));
 			(void) gnutls_hash_deinit(sha, shaout);
 #else /* USE_GNUTLS */
-#else /* USE_GNUTLS */
 	if (hash == NULL || strcasecmp(hash, "sha256") == 0)
 	{
 		EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
