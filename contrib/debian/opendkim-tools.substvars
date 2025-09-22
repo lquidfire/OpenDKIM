@@ -1,0 +1,4 @@
+perl:Depends=perl:any
+shlibs:Depends=libc6 (>= 2.38), libdb5.3t64, libldap2 (>= 2.6.2), liblua5.3-0, libmemcached11t64 (>= 1.1.4), libopendbx1t64 (>= 1.4.6), libopendkim11 (>= 3.0.0~beta1-1), librbl1 (>= 2.7.2), libssl3t64 (>= 3.0.0), libunbound8 (>= 1.8.0), libvbr2 (>= 2.7.2)
+misc:Depends=
+misc:Pre-Depends=

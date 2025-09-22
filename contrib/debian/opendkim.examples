@@ -1,0 +1,4 @@
+usr/share/doc/opendkim/*.sample
+usr/share/doc/opendkim/example.com.ldif
+usr/share/doc/opendkim/opendkim.conf.simple*
+usr/share/doc/opendkim/stats.lua

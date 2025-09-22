@@ -1,0 +1,68 @@
+#! /bin/sh
+#
+# Generate systemd override file from /etc/default
+
+# DEPRECATION NOTICE: Use of this script is discouraged.
+#
+# Instead of editing /etc/default/opendkim and executing this script to generate
+# override files in /etc, please edit the settings in /etc/opendkim.conf
+# directly. If needed, use "systemctl edit opendkim.service" to create and
+# manage configuration overrides.
+
+set -e
+
+NAME=opendkim
+
+RUNDIR=/run/$NAME
+USER=$NAME
+GROUP=$NAME
+SOCKET=local:$RUNDIR/$NAME.sock
+
+_RUNDIR=$RUNDIR
+_USER=$USER
+_GROUP=$GROUP
+_SOCKET=$SOCKET
+
+# Include defaults if available
+if [ -f /etc/default/$NAME ]; then
+	. /etc/default/$NAME
+fi
+
+# Generate service override file
+SERVICE=$(mktemp $NAME.service.XXXXXXXXXX)
+
+if [ "$EXTRAAFTER" != "" ]; then
+	echo "[Unit]" >> $SERVICE
+	echo "After=$EXTRAAFTER" >> $SERVICE
+fi
+if [ "$RUNDIR" != "$_RUNDIR" ]; then
+	echo "[Service]" >> $SERVICE
+	echo "PIDFile=$RUNDIR/$NAME.pid" >> $SERVICE
+fi
+if [ "$USER" != "$_USER" ] || [ "$GROUP" != "$_GROUP" ]; then
+	grep -q -F "[Service]" $SERVICE || echo "[Service]" >> $SERVICE
+	echo "User=$USER" >> $SERVICE
+	echo "Group=$GROUP" >> $SERVICE
+fi
+if [ "$SOCKET" != "$_SOCKET" ] || [ "$RUNDIR" != "$_RUNDIR" ] || [ "$DAEMON_OPTS" != "" ]; then
+	grep -q -F "[Service]" $SERVICE || echo "[Service]" >> $SERVICE
+	echo "ExecStart=" >> $SERVICE
+	echo "ExecStart=/usr/sbin/opendkim -P $RUNDIR/$NAME.pid -p $SOCKET $DAEMON_OPTS" >> $SERVICE
+fi
+
+if [ -s $SERVICE ] ; then
+	mkdir -p /etc/systemd/system/$NAME.service.d
+	install -m 644 $SERVICE /etc/systemd/system/$NAME.service.d/override.conf
+fi
+
+# Generate tmpfiles.d override file
+TMPFILE=$(mktemp $NAME.tmpfile.XXXXXXXXXX)
+
+echo "d $RUNDIR 0750 $USER $GROUP - -" > $TMPFILE
+
+if ! cmp -s $TMPFILE /usr/lib/tmpfiles.d/opendkim.conf; then
+	mkdir -p /etc/tmpfiles.d
+	install -m 644 $TMPFILE /etc/tmpfiles.d/$NAME.conf
+fi
+
+rm -f $SERVICE $TMPFILE

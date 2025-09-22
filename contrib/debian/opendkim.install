@@ -1,0 +1,5 @@
+debian/README.PrivateKeys etc/dkimkeys
+debian/opendkim.conf etc
+debian/opendkim.m4 etc/mail/m4
+debian/opendkim.service-generate usr/lib/opendkim
+usr/sbin/opendkim

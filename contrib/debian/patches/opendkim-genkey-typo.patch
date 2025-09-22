@@ -1,0 +1,15 @@
+Description: opendkim-genkey: Correct typo "restricted" in man page
+Author: Felix Stupp <felix.stupp@outlook.com>
+Bug: https://github.com/trusteddomainproject/OpenDKIM/pull/92
+
+--- a/opendkim/opendkim-genkey.8.in
++++ b/opendkim/opendkim-genkey.8.in
+@@ -71,7 +71,7 @@
+ 
+ .TP
+ .I \-r
+-(\-\-restricted)
++(\-\-restrict)
+ Restricts the key for use in e-mail signing only.  The default is to allow
+ the key to be used for any service.
+ 

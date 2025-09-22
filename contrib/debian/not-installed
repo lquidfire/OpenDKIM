@@ -1,0 +1,23 @@
+# Libtool metadata is not installed in accordance with Debian policy 10.2.
+usr/lib/*/*.la
+
+# The OpenDKIM stats reporting service is defunct.
+usr/sbin/opendkim-reportstats
+usr/share/doc/opendkim/README.opendkim-reportstats
+
+# License information is already distributed as debian/copyright.
+usr/share/doc/opendkim/LICENSE
+usr/share/doc/opendkim/LICENSE.Sendmail
+
+# Various obsolete doc and cruft that we do not want to package.
+usr/share/doc/opendkim/RELEASE_NOTES.Sendmail
+usr/share/doc/opendkim/authheaders-check-setup-hook.lua
+usr/share/doc/opendkim/convert_keylist.sh
+usr/share/doc/opendkim/opendkim
+usr/share/doc/opendkim/opendkim-default-keygen
+usr/share/doc/opendkim/opendkim-fixipaddrs.pl
+usr/share/doc/opendkim/opendkim-spam-ignore-cmdswitch.patch
+usr/share/doc/opendkim/opendkim.service
+usr/share/doc/opendkim/opendkim.spec.in
+usr/share/doc/opendkim/opendkim.xml
+usr/share/doc/opendkim/repute.py

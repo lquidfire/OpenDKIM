@@ -1,0 +1,17 @@
+opendkim (2.11.0~beta2-2) unstable; urgency=medium
+
+    The opendkim package has undergone a general overhaul. As a result, a few
+    stats utilities and additional documentation are now included. More
+    importantly, note that most utilities whose name begins with "opendkim-"
+    are now installed in /usr/sbin instead of /usr/bin. This is to follow the
+    intention of the upstream project more closely, as these programs are
+    designed and documented as system utilities.
+
+    We remind users that opendkim is best configured by editing
+    /etc/opendkim.conf. The legacy defaults file at /etc/default/opendkim is
+    still available, as is the script /lib/opendkim/opendkim.service.generate.
+    However, these provide no additional value over the default configuration
+    file /etc/opendkim.conf. Please take this opportunity to review your
+    configuration setup.
+
+ -- David Bürgin <dbuergin@gluet.ch>  Tue, 28 Jan 2020 10:13:12 +0100

@@ -1,0 +1,3 @@
+shlibs:Depends=libc6 (>= 2.38), libdb5.3t64, libidn2-0 (>= 2.0.0), libssl3t64 (>= 3.0.0)
+misc:Depends=
+misc:Pre-Depends=

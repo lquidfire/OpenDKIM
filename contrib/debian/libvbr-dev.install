@@ -1,0 +1,4 @@
+usr/include/vbr
+usr/lib/*/libvbr.a
+usr/lib/*/libvbr.so
+usr/lib/*/pkgconfig/vbr.pc

@@ -1,0 +1,185 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: OpenDKIM
+Upstream-Contact: The Trusted Domain Project
+Source: http://sourceforge.net/projects/opendkim
+Comment: This package was originally debianized by Mike Markley <mike@markley.org>
+ on Wed,  2 Nov 2005 15:52:53 -0800.
+
+Files: *
+Copyright: 2009-2015, 2017, 2018 The Trusted Domain Project
+           1999-2002, 2004-2009 Sendmail, Inc. and its suppliers
+License: BSD-3-clause and SOSL
+
+Files: libopendkim/base32.c
+Copyright: 2006-2009 Bjorn Andersson <flex@kryo.se>, Erik Ekman <yarrick@kryo.se>
+           2009 J.A.Bezemer@opensourcepartners.nl
+           2010-2012 The Trusted Domain Project
+License: ISC
+ Permission to use, copy, modify, and distribute this software for any
+ purpose with or without fee is hereby granted, provided that the above
+ copyright notice and this permission notice appear in all copies.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+Files: m4/ac_pthread.m4
+Copyright: 2008 Steven G. Johnson <stevenj@alum.mit.edu>
+           2011 Daniel Richard G. <skunk@iSKUNK.ORG>
+License: GPL-3+ with AutoConf exception
+ This program is free software: you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the
+ Free Software Foundation, either version 3 of the License, or (at your
+ option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License along
+ with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ As a special exception, the respective Autoconf Macro's copyright owner
+ gives unlimited permission to copy, distribute and modify the configure
+ scripts that are the output of Autoconf when processing the Macro. You
+ need not follow the terms of the GNU General Public License when using
+ or distributing such scripts, even though portions of the text of the
+ Macro appear in them. The GNU General Public License (GPL) does govern
+ all other use of the material that constitutes the Autoconf Macro.
+ .
+ This special exception to the GPL applies to versions of the Autoconf
+ Macro released by the Autoconf Archive. When you make and distribute a
+ modified version of the Autoconf Macro, you may extend this special
+ exception to the GPL to apply to your modified version as well.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ Version 3 can be found in "/usr/share/common-licenses/GPL-3".
+
+License: BSD-3-clause
+ Copyright (c) 2009, 2010, 2012, 2013, The Trusted Domain Project.
+ All rights reserved.
+ .
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+     * Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+     * Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+     * Neither the name of The Trusted Domain Project nor the names of its
+       contributors may be used to endorse or promote products derived from
+       this software without specific prior written permission.
+ .
+ Portions of this project are also covered by the Sendmail Open Source
+ License, available in this distribution in the file "LICENSE.Sendmail".
+ See the copyright notice(s) in each file to determine whether it is covered
+ by either or both of the licenses.  For example:
+ .
+         Copyright (c) <year> Sendmail, Inc. and its suppliers.
+           All rights reserved.
+ .
+ Files bearing the banner above are covered under the Sendmail Open Source
+ License (see LICENSE.Sendmail).
+ .
+         Copyright (c) <year>, The Trusted Domain Project.
+           All rights reserved.
+ .
+ Files bearing the banner above are covered under the Trusted Domain Project
+ License (above).
+ .
+ Files bearing both banners are covered under both sets of license terms.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE TRUSTED DOMAIN PROJECT ''AS IS'' AND ANY
+ EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE TRUSTED DOMAIN PROJECT BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+License: SOSL
+                    SENDMAIL OPEN SOURCE LICENSE
+ .
+ The following license terms and conditions apply to this open source
+ software ("Software"), unless a different license is obtained directly
+ from Sendmail, Inc. ("Sendmail") located at 6475 Christie Ave, Suite 350,
+ Emeryville, CA 94608, USA.
+ .
+ Use, modification and redistribution (including distribution of any
+ modified or derived work) of the Software in source and binary forms is
+ permitted only if each of the following conditions of 1-6 are met:
+ .
+ 1. Redistributions of the Software qualify as "freeware" or "open
+    source software" under one of the following terms:
+ .
+    (a) Redistributions are made at no charge beyond the reasonable
+        cost of materials and delivery; or
+ .
+    (b) Redistributions are accompanied by a copy of the modified
+        Source Code (on an acceptable machine-readable medium) or by an
+        irrevocable offer to provide a copy of the modified Source Code
+        (on an acceptable machine-readable medium) for up to three years
+        at the cost of materials and delivery. Such redistributions must
+        allow further use, modification, and redistribution of the Source
+        Code under substantially the same terms as this license. For
+        the purposes of redistribution "Source Code" means the complete
+        human-readable, compilable, linkable, and operational source
+        code of the redistributed module(s) including all modifications.
+ .
+ 2. Redistributions of the Software Source Code must retain the
+    copyright notices as they appear in each Source Code file, these
+    license terms and conditions, and the disclaimer/limitation of
+    liability set forth in paragraph 6 below. Redistributions of the
+    Software Source Code must also comply with the copyright notices
+    and/or license terms and conditions imposed by contributors on
+    embedded code. The contributors' license terms and conditions
+    and/or copyright notices are contained in the Source Code
+    distribution.
+ .
+ 3. Redistributions of the Software in binary form must reproduce the
+    Copyright Notice described below, these license terms and conditions,
+    and the disclaimer/limitation of liability set forth in paragraph
+    6 below, in the documentation and/or other materials provided with
+    the binary distribution.  For the purposes of binary distribution,
+    "Copyright Notice" refers to the following language: "Copyright (c)
+    1998-2009 Sendmail, Inc. All rights reserved."
+ .
+ 4. Neither the name, trademark or logo of Sendmail, Inc. (including
+    without limitation its subsidiaries or affiliates) or its contributors
+    may be used to endorse or promote products, or software or services
+    derived from this Software without specific prior written permission.
+    The name "sendmail" is a registered trademark and service mark of
+    Sendmail, Inc.
+ .
+ 5. We reserve the right to cancel this license if you do not comply with
+    the terms.  This license is governed by California law and both of us
+    agree that for any dispute arising out of or relating to this Software,
+    that jurisdiction and venue is proper in San Francisco or Alameda
+    counties.  These license terms and conditions reflect the complete
+    agreement for the license of the Software (which means this supercedes
+    prior or contemporaneous agreements or representations).  If any term
+    or condition under this license is found to be invalid, the remaining
+    terms and conditions still apply.
+ .
+ 6. Disclaimer/Limitation of Liability: THIS SOFTWARE IS PROVIDED BY
+    SENDMAIL AND ITS CONTRIBUTORS "AS IS" WITHOUT WARRANTY OF ANY KIND
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY, NON-INFRINGEMENT AND FITNESS FOR A
+    PARTICULAR PURPOSE ARE EXPRESSLY DISCLAIMED. IN NO EVENT SHALL SENDMAIL
+    OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+    TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+    OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+    OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+    WITHOUT LIMITATION NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+    USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ .
+ $Revision: 1.1 $ $Date: 2009/07/16 18:43:18 $

@@ -1,0 +1,10 @@
+README
+debian/README.Sendmail
+usr/share/doc/opendkim/FEATURES
+usr/share/doc/opendkim/KNOWNBUGS
+usr/share/doc/opendkim/README.LDAP
+usr/share/doc/opendkim/README.SQL
+usr/share/doc/opendkim/README.specs.html
+usr/share/doc/opendkim/chroot
+usr/share/doc/opendkim/opendkim.ldif
+usr/share/doc/opendkim/opendkim.schema

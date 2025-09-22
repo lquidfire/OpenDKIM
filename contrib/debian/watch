@@ -1,0 +1,7 @@
+version=4
+opts=uversionmangle=tr/A-Z/a-z/;s/-((?:alpha|beta)\d*)$/~$1/;s/-/./g,\
+    filenamemangle=s%.*/rel-(.*)%$1%;tr/A-Z/a-z/;s/-((?:alpha|beta)\d*)/~$1/;s/\b(\d+)-/$1./g,\
+    pgpmode=none \
+    https://github.com/trusteddomainproject/OpenDKIM/tags \
+    .*/rel-@PACKAGE@@ANY_VERSION@@ARCHIVE_EXT@ \
+    debian uupdate

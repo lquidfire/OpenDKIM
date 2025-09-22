@@ -1,0 +1,14 @@
+This directory is for storing private keys associated with DKIM signing with
+opendkim.
+
+Here is advice from upstream
+
+(4) Store the private key in a safe place.  We generally use a path like
+    /var/db/dkim/SELECTOR.key.pem (where "SELECTOR" is the name you chose).
+    The /var/db/dkim directory and the associated .pem file should be owned by
+    the user that will be executing the filter (preferably not the
+    superuser) and be mode 0700 and 0600 respectively.
+
+In Debian, we use /etc/dkimkeys by default and the directory permissions and
+ownership are set correctly.  Ensure that the private key is owned by the
+opendkim user and the permissions are 0600.

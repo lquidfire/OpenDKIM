@@ -1,0 +1,11 @@
+usr/bin/opendkim-spam
+usr/sbin/opendkim-atpszone
+usr/sbin/opendkim-expire
+usr/sbin/opendkim-gengraphs
+usr/sbin/opendkim-genkey
+usr/sbin/opendkim-genstats
+usr/sbin/opendkim-genzone
+usr/sbin/opendkim-importstats
+usr/sbin/opendkim-stats
+usr/sbin/opendkim-testkey
+usr/sbin/opendkim-testmsg

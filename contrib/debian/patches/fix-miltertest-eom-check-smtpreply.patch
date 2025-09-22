@@ -1,0 +1,17 @@
+Description: miltertest: Fix undefined behaviour in mt.eom_check() with MT_SMTPREPLY
+Author: David Bürgin <dbuergin@gluet.ch>
+Bug: https://github.com/trusteddomainproject/OpenDKIM/pull/58
+
+--- a/miltertest/miltertest.c
++++ b/miltertest/miltertest.c
+@@ -3645,8 +3645,8 @@
+ 
+ 				snprintf(rbuf, sizeof rbuf, "%s%s%s%s%s",
+ 				         smtp,
+-				         esc == NULL ? "" : " ", esc,
+-				         text == NULL ? "" : " ", text);
++				         esc == NULL ? "" : " ", esc == NULL ? "" : esc,
++				         text == NULL ? "" : " ", text == NULL ? "" : text);
+ 
+ 				if (strcmp(rbuf, (char *) r->eom_rdata) == 0)
+ 				{

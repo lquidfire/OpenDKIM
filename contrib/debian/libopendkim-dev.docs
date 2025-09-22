@@ -1,0 +1,7 @@
+libopendkim/docs/dkim_mail_parse_multi.html
+libopendkim/docs/dkim_sig_setdnssec.html
+usr/share/doc/opendkim/dkim.html
+usr/share/doc/opendkim/dkim_*.html
+usr/share/doc/opendkim/dns.html
+usr/share/doc/opendkim/index.html
+usr/share/doc/opendkim/overview.html

@@ -1,0 +1,68 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@ --with python3
+
+# Build-deps not available on these archs
+DEB_BUILD_ARCH_OS ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_OS)
+ifeq (,$(filter $(DEB_BUILD_ARCH_OS), hurd kfreebsd))
+    UNBOUND = --with-unbound
+else
+    UNBOUND =
+endif
+
+ifeq (,$(filter $(DEB_BUILD_ARCH_OS), hurd))
+    ODBX = --with-odbx
+else
+    ODBX =
+endif
+
+override_dh_auto_configure:
+	CONFIG_SHELL=/bin/sh dh_auto_configure -- \
+		CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
+		LDFLAGS="$(LDFLAGS) -Wl,-z,defs -L/usr/lib/libmilter" \
+		--disable-live-testing \
+		--enable-vbr \
+		--enable-rbl \
+		--enable-atps \
+		--enable-stats \
+		--enable-replace_rules \
+		--enable-query_cache \
+		--enable-sender_macro \
+		--with-libmemcached \
+		--with-openldap \
+		--with-db \
+		--with-sql-backend \
+		--with-sasl \
+		--with-domain=localhost \
+		--with-lua \
+		$(UNBOUND) \
+		$(ODBX)
+
+#ifneq (,$(filter $(DEB_HOST_ARCH), mips mipsel))
+#override_dh_auto_test:
+#	MILTERTEST_RETRY_SPEED_FACTOR=20 dh_auto_test
+#endif
+
+# test results on kfreebsd-* are inconsistent, but not due to package bugs.
+#ifneq (,$(filter $(DEB_HOST_ARCH), kfreebsd-i386 kfreebsd-amd64))
+override_dh_auto_test:
+#endif
+
+override_dh_install:
+	dh_install
+	mv $(CURDIR)/debian/opendkim/usr/lib/opendkim/opendkim.service-generate \
+		$(CURDIR)/debian/opendkim/usr/lib/opendkim/opendkim.service.generate
+
+override_dh_installchangelogs:
+	dh_installchangelogs RELEASE_NOTES
+
+override_dh_installdocs:
+	cp README.md README
+	dh_installdocs
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -f $(CURDIR)/opendkim/tests/*.sock

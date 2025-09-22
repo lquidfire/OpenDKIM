@@ -1,0 +1,4 @@
+The Debian opendkim package installs a Sendmail .m4 file in /etc/mail/m4 to
+ease integration of opendkim with Sendmail.  It includes the default path to
+the opendkim socket.  If you change /etc/default/opendkim to use a different
+socket location, you will have to update the .m4 manually as well.

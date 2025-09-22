@@ -1,0 +1,42 @@
+# Ignore everything by default
+*
+
+# Re-allow Debian packaging files
+!debian/
+!debian/changelog
+!debian/control
+!debian/copyright
+!debian/rules
+!debian/watch
+
+# Re-allow patches and source format
+!debian/patches/
+!debian/patches/**
+!debian/source/
+!debian/source/**
+!debian/upstream/
+!debian/upstream/**
+
+# Allow common Debian helper files
+!debian/*.m4
+!debian/*.install
+!debian/*.docs
+!debian/*.manpages
+!debian/*.conf
+!debian/*.default
+!debian/*.service
+!debian/*.tmpfiles
+!debian/*.postinst
+!debian/*.postrm
+!debian/*.substvars
+!debian/*.symbols
+!debian/*.sh
+!debian/*.html
+!debian/README*
+
+# Optional: ignore editor/OS artifacts
+*.swp
+*.swo
+*~
+.DS_Store
+

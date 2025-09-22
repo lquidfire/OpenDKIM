@@ -1,0 +1,14 @@
+Document: libopendkim-dev
+Title: Development documentation for the OpenDKIM library
+Abstract: This package provides library for implementing signing and
+ verification of the DomainKeys Identified Mail (DKIM) standard. This library
+ provides support for signing and verifying signatures according to RFC 4871,
+ and supports both DomainKeys signing policy and DKIM ADSP.
+ .
+ This documentation provides HTML documentation for OpenDKIM development.
+Author: Murray Kucherawy
+Section: Programming/C
+
+Format: HTML
+Index: /usr/share/doc/libopendkim-dev/index.html
+Files: /usr/share/doc/libopendkim-dev/*.html
