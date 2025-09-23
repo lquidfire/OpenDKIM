@@ -72,7 +72,7 @@ Package: libopendkim-dev
 Section: libdevel
 Architecture: any
 Multi-Arch: same
-Depends: libopendkim11 (= ${binary:Version}), ${misc:Depends}
+Depends: libopendkim12 (= ${binary:Version}), ${misc:Depends}
 Description: DomainKeys Identified Mail (DKIM) library (development files)
  The OpenDKIM Project is a community effort to develop and maintain a C library
  for producing DKIM-aware applications and an open source milter for providing
@@ -155,10 +155,8 @@ Description: utility for testing milter applications
  written in the Lua programming language.
 
 Package: opendkim-keygen
-Architecture: any
+Architecture: all
 Depends: ${shlibs:Depends}, ${python3:Depends}, ${misc:Depends}
-Breaks:
-Replaces:
 Description: utility for generating DKIM and ARC keys (RSA and Ed25519)
  The OpenDKIM contributors make an effort to develop and maintain a C library
  for producing DKIM-aware applications and an open source milter for providing
