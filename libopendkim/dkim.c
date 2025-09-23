@@ -78,6 +78,7 @@
 # include <openssl/err.h>
 # include <openssl/sha.h>
 #endif /* USE_GNUTLS */
+#include <openssl/evp.h>
 
 /* libopendkim includes */
 #include "dkim-internal.h"
@@ -263,6 +264,89 @@ const u_char *dkim_required_signhdrs[] =
 	"from",
 	NULL
 };
+
+/*
+ * Verify a DKIM-RSA-SHA256 signature.
+ *
+ * Parameters:
+ *   dkim    - DKIM context (for error reporting)
+ *   pkey    - EVP_PKEY containing the public RSA key
+ *   digest  - precomputed SHA256 digest of the canonicalized DKIM header/body
+ *   diglen  - length of digest
+ *   sig     - raw DKIM signature to verify
+ *   siglen  - length of the signature
+ *   siginfo - DKIM_SIGINFO for selector/domain info (for error logging)
+ *
+ * Returns:
+ *   1  if signature is valid
+ *   0  if signature is invalid
+ *  <0  if an OpenSSL error occurred
+ */
+static int verify_dkim_rsa_sha256(DKIM *dkim, EVP_PKEY *pkey,
+                                  const unsigned char *digest, size_t diglen,
+                                  const unsigned char *sig, size_t siglen,
+                                  DKIM_SIGINFO *siginfo)
+{
+    EVP_MD_CTX *md_ctx = NULL;
+    EVP_PKEY_CTX *pkey_ctx = NULL;
+    int rc = 0;
+
+    if (pkey == NULL || digest == NULL || sig == NULL)
+        return 0;
+
+    md_ctx = EVP_MD_CTX_new();
+    if (md_ctx == NULL)
+    {
+        dkim_load_ssl_errors(dkim, 0);
+        dkim_error(dkim,
+                   "s=%s d=%s: failed to allocate EVP_MD_CTX",
+                   dkim_sig_getselector(siginfo),
+                   dkim_sig_getdomain(siginfo));
+        return 0;
+    }
+
+    if (EVP_DigestVerifyInit(md_ctx, &pkey_ctx, EVP_sha256(), NULL, pkey) <= 0)
+    {
+        dkim_load_ssl_errors(dkim, 0);
+        dkim_error(dkim,
+                   "s=%s d=%s: EVP_DigestVerifyInit failed",
+                   dkim_sig_getselector(siginfo),
+                   dkim_sig_getdomain(siginfo));
+        goto done;
+    }
+
+    if (EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, RSA_PKCS1_PADDING) <= 0)
+    {
+        dkim_load_ssl_errors(dkim, 0);
+        dkim_error(dkim,
+                   "s=%s d=%s: EVP_PKEY_CTX_set_rsa_padding failed",
+                   dkim_sig_getselector(siginfo),
+                   dkim_sig_getdomain(siginfo));
+        goto done;
+    }
+
+    rc = EVP_DigestVerify(md_ctx, sig, siglen, digest, diglen);
+    if (rc != 1)
+    {
+        unsigned long err = ERR_get_error();
+        if (err != 0)
+        {
+            char buf[256];
+            ERR_error_string_n(err, buf, sizeof(buf));
+            dkim_error(dkim,
+                       "s=%s d=%s: EVP_DigestVerify failed: %s",
+                       dkim_sig_getselector(siginfo),
+                       dkim_sig_getdomain(siginfo),
+                       buf);
+        }
+    }
+
+done:
+    if (md_ctx)
+        EVP_MD_CTX_free(md_ctx);
+
+    return rc;  // 1 = valid, 0 = invalid, <0 = error
+}
 
 /* ========================= PRIVATE SECTION ========================= */
 
@@ -5888,64 +5972,10 @@ dkim_sig_process(DKIM *dkim, DKIM_SIGINFO *sig)
 			crypto->crypto_inlen = sig->sig_siglen;
 			crypto->crypto_key = NULL; // Mark as unused
 
-			nid = NID_sha256;
-
-			// Verification using EVP API
-			{
-				EVP_MD_CTX *md_ctx = NULL;
-				EVP_PKEY_CTX *pkey_ctx = NULL;
-
-				md_ctx = EVP_MD_CTX_new();
-				if (md_ctx == NULL)
-				{
-					dkim_sig_load_ssl_errors(dkim, sig, 0);
-					dkim_error(dkim,
-							   "s=%s d=%s: EVP_MD_CTX_new() failed",
-							   dkim_sig_getselector(sig),
-							   dkim_sig_getdomain(sig));
-					BIO_CLOBBER(key);
-					sig->sig_error = DKIM_SIGERROR_KEYDECODE;
-					return DKIM_STAT_OK;
-				}
-
-				// Initialize for verification
-				int init_status = EVP_DigestVerifyInit(md_ctx, &pkey_ctx,
-													   EVP_get_digestbynid(nid),
-													   NULL, crypto->crypto_pkey);
-				if (init_status != 1)
-				{
-					dkim_sig_load_ssl_errors(dkim, sig, 0);
-					dkim_error(dkim,
-							   "s=%s d=%s: EVP_DigestVerifyInit() failed",
-							   dkim_sig_getselector(sig),
-							   dkim_sig_getdomain(sig));
-					EVP_MD_CTX_free(md_ctx);
-					BIO_CLOBBER(key);
-					sig->sig_error = DKIM_SIGERROR_KEYDECODE;
-					return DKIM_STAT_OK;
-				}
-
-				// Set RSA padding mode
-				if (EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, crypto->crypto_pad) <= 0)
-				{
-					dkim_sig_load_ssl_errors(dkim, sig, 0);
-					dkim_error(dkim,
-							   "s=%s d=%s: EVP_PKEY_CTX_set_rsa_padding() failed",
-							   dkim_sig_getselector(sig),
-							   dkim_sig_getdomain(sig));
-					EVP_MD_CTX_free(md_ctx);
-					BIO_CLOBBER(key);
-					sig->sig_error = DKIM_SIGERROR_KEYDECODE;
-					return DKIM_STAT_OK;
-				}
-
-				// Perform the verification
-				vstat = EVP_DigestVerify(md_ctx, crypto->crypto_in, crypto->crypto_inlen,
-										 digest, diglen);
-
-				// Clean up the context
-				EVP_MD_CTX_free(md_ctx);
-			}
+			// Perform RSA-SHA256 verification
+			vstat = verify_dkim_rsa_sha256(crypto->crypto_pkey,
+				digest, diglen,
+				crypto->crypto_in, crypto->crypto_inlen);
 		}
 
 		dkim_sig_load_ssl_errors(dkim, sig, 0);
