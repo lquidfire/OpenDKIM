@@ -5,7 +5,7 @@ Maintainer: Edmund Lodewijks <edmund@proteamail.com>
 Build-Depends: debhelper-compat (= 13), pkgconf, libmilter-dev, libdb-dev,
  libunbound-dev [linux-any], libldap-dev, liblua5.3-dev, libbsd-dev,
  libopendbx1-dev [linux-any kfreebsd-any], libssl-dev, libsasl2-dev,
- libmemcached-dev dh-sequence-python3
+ libmemcached-dev, dh-python
 Standards-Version: 4.6.2
 Homepage: http://www.opendkim.org/
 Vcs-Browser: https://github.com/lquidfire/OpenDKIM
