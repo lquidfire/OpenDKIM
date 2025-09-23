@@ -1159,16 +1159,9 @@ dkim_sig_load_ssl_errors(DKIM *dkim, DKIM_SIGINFO *sig, int status)
 DKIM_STAT
 dkim_privkey_load(DKIM *dkim)
 {
-	printf("DEBUG: dkim_privkey_load() called\n");
-	printf("DEBUG: dkim->dkim_key length = %d\n", (int)dkim->dkim_keylen);
-	printf("DEBUG: dkim->dkim_key starts with: %.50s\n", (char*)dkim->dkim_key);
-	printf("DEBUG: dkim->dkim_signalg = %d\n", dkim->dkim_signalg);
-
 #ifdef USE_GNUTLS
-	printf("DEBUG: Using GNUTLS path\n");
 	int status;
 #endif /* USE_GNUTLS */
-	printf("DEBUG: Using OpenSSL path\n");
 	struct dkim_crypto *crypto;
 
 	assert(dkim != NULL);
@@ -1202,17 +1195,13 @@ dkim_privkey_load(DKIM *dkim)
 #else /* USE_GNUTLS */
 	if (crypto->crypto_keydata == NULL)
 	{
-		printf("DEBUG: Creating new BIO\n");
 		crypto->crypto_keydata = BIO_new_mem_buf(dkim->dkim_key,
 		                                         dkim->dkim_keylen);
 		if (crypto->crypto_keydata == NULL)
 		{
-			printf("DEBUG: BIO_new_mem_buf() failed\n");
 			dkim_error(dkim, "BIO_new_mem_buf() failed");
 			return DKIM_STAT_NORESOURCE;
 		}
-		else
-			printf("DEBUG: Reusing existing BIO\n");
 	}
 #endif /* USE_GNUTLS */
 
@@ -1270,7 +1259,6 @@ dkim_privkey_load(DKIM *dkim)
 
 	if (strncmp((char *) dkim->dkim_key, "-----", 5) == 0)
 	{						/* PEM */
-		printf("DEBUG: Taking PEM path\n");
 		BIO_reset(crypto->crypto_keydata);
 		crypto->crypto_pkey = PEM_read_bio_PrivateKey(crypto->crypto_keydata,
 		                                              NULL, NULL,
@@ -1278,18 +1266,14 @@ dkim_privkey_load(DKIM *dkim)
 
 		if (crypto->crypto_pkey == NULL)
 		{
-			printf("DEBUG: PEM_read_bio_PrivateKey() failed\n");
 			dkim_load_ssl_errors(dkim, 0);
 			dkim_error(dkim, "PEM_read_bio_PrivateKey() failed");
 			BIO_CLOBBER(crypto->crypto_keydata);
 			return DKIM_STAT_NORESOURCE;
 		}
-		else
-			printf("DEBUG: PEM key loaded successfully\n");
 	}
 	else
 	{						/* DER */
-		printf("DEBUG: Taking DER path\n");
 		BIO_reset(crypto->crypto_keydata);
 		crypto->crypto_pkey = d2i_PrivateKey_bio(crypto->crypto_keydata,
 		                                         NULL);
@@ -1325,7 +1309,6 @@ dkim_privkey_load(DKIM *dkim)
 	}
 #endif /* USE_GNUTLS */
 
-	printf("DEBUG: dkim_privkey_load() completed successfully\n");
 	return DKIM_STAT_OK;
 }
 
@@ -3920,15 +3903,6 @@ dkim_eom_sign(DKIM *dkim)
 		return DKIM_STAT_INTERNAL;
 	}
 
-	printf("DEBUG: Header digest computed, length=%zu\n", diglen);
-	printf("DEBUG: Header canonicalization method: %s\n",
-		   hc->canon_canon == DKIM_CANON_SIMPLE ? "simple" : "relaxed");
-	printf("DEBUG: Digest (first 16 bytes): ");
-	for (int i = 0; i < 16 && i < diglen; i++) {
-		printf("%02x", digest[i]);
-	}
-	printf("\n");
-
 	/* compute and store the signature */
 	switch (sig->sig_signalg)
 	{
@@ -3966,71 +3940,81 @@ dkim_eom_sign(DKIM *dkim)
 #else /* USE_GNUTLS */
 	  case DKIM_SIGN_RSASHA256:
 	  {
-		  int nid;
 		  struct dkim_crypto *crypto;
-		  EVP_MD_CTX *md_ctx = NULL;
-		  EVP_PKEY_CTX *pkey_ctx = NULL;
+		  EVP_PKEY_CTX *pctx = NULL;
 		  size_t siglen_tmp;
+		  int rc;
 
 		  crypto = (struct dkim_crypto *) sig->sig_signature;
-		  nid = NID_sha256;
 
-		  // Create and initialize the digest context
-		  md_ctx = EVP_MD_CTX_new();
-		  if (md_ctx == NULL)
+		  /* sanity */
+		  if (crypto == NULL || crypto->crypto_pkey == NULL)
+		  {
+			  dkim_error(dkim, "no crypto key available for RSA signing");
+			  return DKIM_STAT_INTERNAL;
+		  }
+
+		  /* Create a PKEY context for signing */
+		  pctx = EVP_PKEY_CTX_new(crypto->crypto_pkey, NULL);
+		  if (pctx == NULL)
 		  {
 			  dkim_load_ssl_errors(dkim, 0);
-			  dkim_error(dkim, "EVP_MD_CTX_new() failed");
+			  dkim_error(dkim, "EVP_PKEY_CTX_new() failed");
 			  BIO_CLOBBER(crypto->crypto_keydata);
 			  return DKIM_STAT_INTERNAL;
 		  }
 
-		  // Initialize for signing
-		  status = EVP_DigestSignInit(md_ctx, &pkey_ctx, EVP_get_digestbynid(nid),
-									  NULL, crypto->crypto_pkey);
-		  if (status != 1)
+		  if (EVP_PKEY_sign_init(pctx) <= 0)
 		  {
 			  dkim_load_ssl_errors(dkim, 0);
-			  dkim_error(dkim, "EVP_DigestSignInit() failed");
-			  EVP_MD_CTX_free(md_ctx);
+			  dkim_error(dkim, "EVP_PKEY_sign_init() failed");
+			  EVP_PKEY_CTX_free(pctx);
 			  BIO_CLOBBER(crypto->crypto_keydata);
 			  return DKIM_STAT_INTERNAL;
 		  }
 
-		  // Set RSA padding mode
-		  if (EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, RSA_PKCS1_PADDING) <= 0)
+		  /* Ensure we use PKCS#1 v1.5 padding (required by DKIM/rsa-sha256) */
+		  if (EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PADDING) <= 0)
 		  {
 			  dkim_load_ssl_errors(dkim, 0);
 			  dkim_error(dkim, "EVP_PKEY_CTX_set_rsa_padding() failed");
-			  EVP_MD_CTX_free(md_ctx);
+			  EVP_PKEY_CTX_free(pctx);
 			  BIO_CLOBBER(crypto->crypto_keydata);
 			  return DKIM_STAT_INTERNAL;
 		  }
 
-		  // Create the signature
-		  siglen_tmp = crypto->crypto_outlen;
-		  status = EVP_DigestSign(md_ctx, crypto->crypto_out, &siglen_tmp,
-								  digest, diglen);
-
-		  if (status != 1 || siglen_tmp == 0)
+		  /* Tell the EVP layer that the input is a SHA256 digest and should be wrapped */
+		  if (EVP_PKEY_CTX_set_signature_md(pctx, EVP_sha256()) <= 0)
 		  {
 			  dkim_load_ssl_errors(dkim, 0);
-			  dkim_error(dkim,
-						 "signature generation failed (status %d, length %zu)",
-						 status, siglen_tmp);
-			  EVP_MD_CTX_free(md_ctx);
+			  dkim_error(dkim, "EVP_PKEY_CTX_set_signature_md() failed");
+			  EVP_PKEY_CTX_free(pctx);
 			  BIO_CLOBBER(crypto->crypto_keydata);
 			  return DKIM_STAT_INTERNAL;
 		  }
 
-		  // Clean up the context
-		  EVP_MD_CTX_free(md_ctx);
+		  /* Request the required signature length first */
+		  siglen_tmp = crypto->crypto_outlen;
+		  rc = EVP_PKEY_sign(pctx, crypto->crypto_out, &siglen_tmp, digest, diglen);
+		  if (rc <= 0 || siglen_tmp == 0)
+		  {
+			  dkim_load_ssl_errors(dkim, 0);
+			  dkim_error(dkim, "signature generation failed (status %d, length %zu)",
+			             rc, siglen_tmp);
+			  EVP_PKEY_CTX_free(pctx);
+			  BIO_CLOBBER(crypto->crypto_keydata);
+			  return DKIM_STAT_INTERNAL;
+		  }
 
-		  // Update output length and set pointers
+		  /* success */
+		  EVP_PKEY_CTX_free(pctx);
+
+		  /* record signature pointer/length for downstream use */
 		  l = (unsigned int) siglen_tmp;
 		  crypto->crypto_outlen = l;
 		  signature = crypto->crypto_out;
 		  siglen = crypto->crypto_outlen;
+
 		  break;
 	  }
 
