@@ -1159,9 +1159,16 @@ dkim_sig_load_ssl_errors(DKIM *dkim, DKIM_SIGINFO *sig, int status)
 DKIM_STAT
 dkim_privkey_load(DKIM *dkim)
 {
+	printf("DEBUG: dkim_privkey_load() called\n");
+	printf("DEBUG: dkim->dkim_key length = %d\n", (int)dkim->dkim_keylen);
+	printf("DEBUG: dkim->dkim_key starts with: %.50s\n", (char*)dkim->dkim_key);
+	printf("DEBUG: dkim->dkim_signalg = %d\n", dkim->dkim_signalg);
+
 #ifdef USE_GNUTLS
+	printf("DEBUG: Using GNUTLS path\n");
 	int status;
 #endif /* USE_GNUTLS */
+	printf("DEBUG: Using OpenSSL path\n");
 	struct dkim_crypto *crypto;
 
 	assert(dkim != NULL);
@@ -1195,13 +1202,17 @@ dkim_privkey_load(DKIM *dkim)
 #else /* USE_GNUTLS */
 	if (crypto->crypto_keydata == NULL)
 	{
+		printf("DEBUG: Creating new BIO\n");
 		crypto->crypto_keydata = BIO_new_mem_buf(dkim->dkim_key,
 		                                         dkim->dkim_keylen);
 		if (crypto->crypto_keydata == NULL)
 		{
+			printf("DEBUG: BIO_new_mem_buf() failed\n");
 			dkim_error(dkim, "BIO_new_mem_buf() failed");
 			return DKIM_STAT_NORESOURCE;
 		}
+		else
+			printf("DEBUG: Reusing existing BIO\n");
 	}
 #endif /* USE_GNUTLS */
 
@@ -1259,20 +1270,27 @@ dkim_privkey_load(DKIM *dkim)
 
 	if (strncmp((char *) dkim->dkim_key, "-----", 5) == 0)
 	{						/* PEM */
+		printf("DEBUG: Taking PEM path\n");
+		BIO_reset(crypto->crypto_keydata);
 		crypto->crypto_pkey = PEM_read_bio_PrivateKey(crypto->crypto_keydata,
 		                                              NULL, NULL,
 		                                              NULL);
 
 		if (crypto->crypto_pkey == NULL)
 		{
+			printf("DEBUG: PEM_read_bio_PrivateKey() failed\n");
 			dkim_load_ssl_errors(dkim, 0);
 			dkim_error(dkim, "PEM_read_bio_PrivateKey() failed");
 			BIO_CLOBBER(crypto->crypto_keydata);
 			return DKIM_STAT_NORESOURCE;
 		}
+		else
+			printf("DEBUG: PEM key loaded successfully\n");
 	}
 	else
 	{						/* DER */
+		printf("DEBUG: Taking DER path\n");
+		BIO_reset(crypto->crypto_keydata);
 		crypto->crypto_pkey = d2i_PrivateKey_bio(crypto->crypto_keydata,
 		                                         NULL);
 
@@ -1307,6 +1325,7 @@ dkim_privkey_load(DKIM *dkim)
 	}
 #endif /* USE_GNUTLS */
 
+	printf("DEBUG: dkim_privkey_load() completed successfully\n");
 	return DKIM_STAT_OK;
 }
 
@@ -3811,7 +3830,8 @@ dkim_eom_sign(DKIM *dkim)
 #else /* USE_GNUTLS */
 	if (!(crypto->crypto_key != NULL ||
 	      (sig->sig_signalg == DKIM_SIGN_ED25519SHA256 &&
-	       crypto->crypto_pkey != NULL)))
+	       crypto->crypto_pkey != NULL) ||
+	      (sig->sig_signalg == DKIM_SIGN_RSASHA256 && crypto->crypto_pkey != NULL)))
 #endif /* USE_GNUTLS */
 	{
 		dkim_error(dkim, "private key load failed");
@@ -3899,6 +3919,15 @@ dkim_eom_sign(DKIM *dkim)
 		dkim_error(dkim, "dkim_canon_getfinal() failed");
 		return DKIM_STAT_INTERNAL;
 	}
+
+	printf("DEBUG: Header digest computed, length=%zu\n", diglen);
+	printf("DEBUG: Header canonicalization method: %s\n",
+		   hc->canon_canon == DKIM_CANON_SIMPLE ? "simple" : "relaxed");
+	printf("DEBUG: Digest (first 16 bytes): ");
+	for (int i = 0; i < 16 && i < diglen; i++) {
+		printf("%02x", digest[i]);
+	}
+	printf("\n");
 
 	/* compute and store the signature */
 	switch (sig->sig_signalg)

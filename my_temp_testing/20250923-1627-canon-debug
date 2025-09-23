@@ -1,0 +1,52 @@
+$ make t-test16 && ./t-test16
+/bin/sh ../../libtool  --tag=CC   --mode=link gcc    -g -O2    -o t-test16 t-test16.o ../libopendkim.la  -lssl -lcrypto
+libtool: link: gcc -g -O2 -o .libs/t-test16 t-test16.o  ../.libs/libopendkim.so -lidn2 -lssl -lcrypto -Wl,-rpath -Wl,/usr/local/lib
+*** relaxed/relaxed rsa-sha256 signing
+DEBUG: Canonicalizing header: Received: received data 3 part 1
+         data 3 part 2
+DEBUG: Canonicalizing header: Received: received data 2
+DEBUG: Canonicalizing header: Received: received data 1
+DEBUG: Canonicalizing header: From: Murray S. Kucherawy <msk@sendmail.com>
+DEBUG: Canonicalizing header: To: Sendmail Test Address <sa-test@sendmail.net>
+DEBUG: Canonicalizing header: Date: Thu, 05 May 2005 11:59:09 -0700
+DEBUG: Canonicalizing header: Subject: DKIM test message
+DEBUG: Canonicalizing header: Message-ID: <439094BF.5010709@sendmail.com>
+DEBUG: Body hash computed, length=32
+DEBUG: Body canonicalization method: relaxed
+DEBUG: Body bytes processed: 340
+DEBUG: dkim_privkey_load() called
+DEBUG: dkim->dkim_key length = 887
+DEBUG: dkim->dkim_key starts with: -----BEGIN RSA PRIVATE KEY-----
+MIICXQIBAAKBgQC4GU
+DEBUG: dkim->dkim_signalg = 1
+DEBUG: Using OpenSSL path
+DEBUG: Creating new BIO
+DEBUG: Reusing existing BIO
+DEBUG: Taking PEM path
+DEBUG: PEM key loaded successfully
+DEBUG: dkim_privkey_load() completed successfully
+DEBUG 2: Canonicalizing header: DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=test;
+        t=1172620939; bh=QVUr
+DEBUG: Canonicalizing header: dkim-signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=test;
+        t=1172620939; bh=QVUr
+DEBUG 3: Canonicalizing header: DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=test;
+        t=1172620939; bh=QVUr
+DEBUG: Header digest computed, length=32
+DEBUG: Header canonicalization method: relaxed
+DEBUG: Digest (first 16 bytes): 500d1b9a6b0d43c46dbd065d90afea5a
+DEBUG: dkim_eom() returned status = 0
+Generated signature header:
+v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=test;
+        t=1172620939; bh=QVUr2KBvm7/Q/ustiYzOlFMN9G8IMqBzUX81BdpjSDI=;
+        h=Received:Received:Received:From:To:Date:Subject:Message-ID;
+        b=a+lznjFGLfJegEifuRqoKGHDezuBTKIXGyVmPE4nC0Gl0AgUk/c1ATP4At/mQxKca
+         7wvs/2UDgIYZfzjDIit1KhOkkwwXtZNggHOdPO5VyONUm/UeGhpVrXx4USwZlG/is7
+         dwJ+v+x103byJ5UsS9fCnexfQv8b9Qk8rcq6GBTE=
+t-test16: t-test16.c:172: main: Assertion `strcmp(SIG2, hdr) == 0' failed.
+Aborted (core dumped)
+
+
+
+483:    printf("DEBUG: Canonicalizing header: %.100s\n", hdr->hdr_text); -- in: DKIM_CANON_HEADER
+1392:   printf("DEBUG 2: Canonicalizing header: %.100s\n", hdr->hdr_text); -- in: DKIM_CANON_SIGNATURE top
+1470:                   printf("DEBUG 3: Canonicalizing header: %.100s\n", hdr->hdr_text); -- in: DKIM_CANON_SIGNATURE #else /* USE_GNUTLS */

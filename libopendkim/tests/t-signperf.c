@@ -102,9 +102,9 @@ alg_code(char *name)
 	if (name == NULL)
 		return (dkim_alg_t) DKIM_SIGN_UNKNOWN;
 	else if (strcasecmp(name, "rsa-sha1") == 0)
-		return (dkim_alg_t) DKIM_SIGN_RSASHA1;
+		return (dkim_alg_t) DKIM_SIGN_DEFAULT;
 	else if (strcasecmp(name, "rsa-sha256") == 0)
-		return (dkim_alg_t) DKIM_SIGN_RSASHA256;
+		return (dkim_alg_t) DKIM_SIGN_DEFAULT;
 	else
 		return (dkim_alg_t) DKIM_SIGN_UNKNOWN;
 }
@@ -127,10 +127,10 @@ alg_name(dkim_alg_t code)
 	  case DKIM_SIGN_DEFAULT:
 		return "default";
 
-	  case DKIM_SIGN_RSASHA1:
+	  case DKIM_SIGN_DEFAULT:
 		return "rsa-sha1";
 
-	  case DKIM_SIGN_RSASHA256:
+	  case DKIM_SIGN_DEFAULT:
 		return "rsa-sha256";
 
 	  case DKIM_SIGN_UNKNOWN:
@@ -270,11 +270,11 @@ main(int argc, char **argv)
 	if (signalg == DKIM_SIGN_UNKNOWN)
 	{
 		if (dkim_libfeature(lib, DKIM_FEATURE_SHA256))
-			signalg = DKIM_SIGN_RSASHA256;
+			signalg = DKIM_SIGN_DEFAULT;
 		else
-			signalg = DKIM_SIGN_RSASHA1;
+			signalg = DKIM_SIGN_DEFAULT;
 	}
-	else if (signalg == DKIM_SIGN_RSASHA256 &&
+	else if (signalg == DKIM_SIGN_DEFAULT &&
 	         !dkim_libfeature(lib, DKIM_FEATURE_SHA256))
 	{
 		fprintf(stdout,

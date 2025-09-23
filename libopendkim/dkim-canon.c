@@ -480,6 +480,7 @@ dkim_canon_header(DKIM *dkim, DKIM_CANON *canon, struct dkim_header *hdr,
 	dkim_canon_buffer(canon, dkim_dstring_get(dkim->dkim_canonbuf),
 	                  dkim_dstring_len(dkim->dkim_canonbuf));
 
+	printf("DEBUG: Canonicalizing header: %.100s\n", hdr->hdr_text);
 	return DKIM_STAT_OK;
 }
 
@@ -1388,6 +1389,7 @@ dkim_canon_runheaders(DKIM *dkim)
 DKIM_STAT
 dkim_canon_signature(DKIM *dkim, struct dkim_header *hdr)
 {
+	printf("DEBUG 2: Canonicalizing header: %.100s\n", hdr->hdr_text);
 	DKIM_STAT status;
 	DKIM_CANON *cur;
 	struct dkim_header tmphdr;
@@ -1465,6 +1467,7 @@ dkim_canon_signature(DKIM *dkim, struct dkim_header *hdr)
 #else /* USE_GNUTLS */
 		  case DKIM_HASHTYPE_SHA256:
 		  {
+			printf("DEBUG 3: Canonicalizing header: %.100s\n", hdr->hdr_text);
 			struct dkim_hash *hash;
 
 			hash = (struct dkim_hash *) cur->canon_hash;
@@ -1885,6 +1888,11 @@ dkim_canon_closebody(DKIM *dkim)
 
 			hash = (struct dkim_hash *) cur->canon_hash;
 			EVP_DigestFinal_ex(hash->hash_ctx, hash->hash_out, &hash->hash_outlen);
+
+			printf("DEBUG: Body hash computed, length=%u\n", hash->hash_outlen);
+			printf("DEBUG: Body canonicalization method: %s\n",
+				   cur->canon_canon == DKIM_CANON_SIMPLE ? "simple" : "relaxed");
+			printf("DEBUG: Body bytes processed: %lu\n", cur->canon_wrote);
 
 			if (hash->hash_tmpbio != NULL)
 				(void) BIO_flush(hash->hash_tmpbio);

@@ -67,7 +67,7 @@ main(int argc, char **argv)
 	                    sizeof flags);
 #endif /* TEST_KEEP_FILES */
 
-	key = KEY;
+	key = KEYED25519;
 
 	dkim = dkim_sign(lib, JOBID, NULL, key, SELECTOR, DOMAIN,
 	                 DKIM_CANON_RELAXED, DKIM_CANON_RELAXED,

@@ -84,7 +84,7 @@ main(int argc, char **argv)
 
 	dkim = dkim_sign(lib, JOBID, NULL, key, SELECTOR, DOMAIN,
 	                 DKIM_CANON_RELAXED, DKIM_CANON_RELAXED,
-	                 DKIM_SIGN_RSASHA1, -1L, &status);
+	                 DKIM_SIGN_DEFAULT, -1L, &status);
 	assert(dkim != NULL);
 
 	/* preload test */

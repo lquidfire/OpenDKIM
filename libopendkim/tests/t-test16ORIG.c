@@ -24,7 +24,7 @@
 
 #define	MAXHEADER	4096
 
-#define SIG2 "v=1; a=rsa-sha256; c=relaxed/simple; d=sendmail.com; s=test;\r\n\tt=1172620939; bh=yHBAX+3IwxTZIynBuB/5tlsBInJq9n8qz5fgAycHi80=;\r\n\th=Received:Received:Received:From:To:Date:Subject:Message-ID;\r\n\tb=HLU6+LztURsYvmqEEHX74Vx9dR7tRtUDIlgRws7WCk5D8HqHx9Z2sSWkPqlkbh+me\r\n\t XydZWexg42oxOE94p6BLa5rDhJopSvlHBeZeCLp0U+JIkk7TlLWv82K+2Tbykx1b8b\r\n\t YuriFafkyPYhm+SFHs0zirGDJz71dYnTMc229znM="
+#define SIG2 "v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=test;\r\n\tt=1172620939; bh=QVUr2KBvm7/Q/ustiYzOlFMN9G8IMqBzUX81BdpjSDI=;\r\n\th=Received:Received:Received:From:To:Date:Subject:Message-ID;\r\n\tb=qylGDIlwT+HP/6iiL3+WPCykGTvQZ6imIMiK4gk1A6mLAmwIUnBJeZA4EU0LWxNbG\r\n\t VAfVM92lP3rQpdADzJyCBeSBllH1hXwS2SMwDCK025E6ZpYVVphVFEv+2IcC2U8mHP\r\n\t xuYj8nAD4bJNjCwdVpVCq3PngQy2B1+jUNKrbKHg="
 
 /*
 **  MAIN -- program mainline
@@ -59,12 +59,12 @@ main(int argc, char **argv)
 
 	if (!dkim_libfeature(lib, DKIM_FEATURE_SHA256))
 	{
-		printf("*** relaxed/simple rsa-sha256 signing subdomain with i=/d= mismatch SKIPPED\n");
+		printf("*** relaxed/relaxed rsa-sha256 signing SKIPPED\n");
 		dkim_close(lib);
 		return 0;
 	}
 
-	printf("*** relaxed/simple rsa-sha256 signing subdomain with i=/d= mismatch\n");
+	printf("*** relaxed/relaxed rsa-sha256 signing\n");
 
 #ifdef TEST_KEEP_FILES
 	/* set flags */
@@ -75,9 +75,9 @@ main(int argc, char **argv)
 
 	key = KEY;
 
-	dkim = dkim_sign(lib, JOBID, NULL, key, SELECTOR, DOMAIN2,
-	                 DKIM_CANON_RELAXED, DKIM_CANON_SIMPLE,
-	                 DKIM_SIGN_DEFAULT, -1L, &status);
+	dkim = dkim_sign(lib, JOBID, NULL, key, SELECTOR, DOMAIN,
+	                 DKIM_CANON_RELAXED, DKIM_CANON_RELAXED,
+	                 DKIM_SIGN_RSASHA256, -1L, &status);
 	assert(dkim != NULL);
 
 	/* fix signing time */
@@ -94,8 +94,7 @@ main(int argc, char **argv)
 	status = dkim_header(dkim, HEADER04, strlen(HEADER04));
 	assert(status == DKIM_STAT_OK);
 
-#define	XHEADER05	"From: Murray S. Kucherawy <msk@eng.sendmail.com>"
-	status = dkim_header(dkim, XHEADER05, strlen(XHEADER05));
+	status = dkim_header(dkim, HEADER05, strlen(HEADER05));
 	assert(status == DKIM_STAT_OK);
 
 	status = dkim_header(dkim, HEADER06, strlen(HEADER06));

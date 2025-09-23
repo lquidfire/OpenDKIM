@@ -4,6 +4,8 @@
 **
 **  Copyright (c) 2009, 2011, 2012, The Trusted Domain Project.
 **    All rights reserved.
+**
+**  Copyright 2025 OpenDKIM contributors.
 */
 
 #include "build-config.h"
@@ -24,7 +26,7 @@
 
 #define	MAXHEADER	4096
 
-#define SIG2 "v=1; a=rsa-sha256; c=relaxed/simple; d=sendmail.com; s=test;\r\n\tt=1172620939; bh=yHBAX+3IwxTZIynBuB/5tlsBInJq9n8qz5fgAycHi80=;\r\n\th=Received:Received:Received:From:To:Date:Subject:Message-ID;\r\n\tb=HLU6+LztURsYvmqEEHX74Vx9dR7tRtUDIlgRws7WCk5D8HqHx9Z2sSWkPqlkbh+me\r\n\t XydZWexg42oxOE94p6BLa5rDhJopSvlHBeZeCLp0U+JIkk7TlLWv82K+2Tbykx1b8b\r\n\t YuriFafkyPYhm+SFHs0zirGDJz71dYnTMc229znM="
+#define SIG2 "v=1; a=ed25519-sha256; c=simple/relaxed; d=example.com;\r\n\ts=test; t=1172620939;\r\n\tbh=QVUr2KBvm7/Q/ustiYzOlFMN9G8IMqBzUX81BdpjSDI=;\r\n\th=Received:Received:Received:From:To:Date:Subject:Message-ID;\r\n\tb=FvC3qOoe33u5eaJGL1vr38pIDOxtZ+MeXGzqlaIjQf6EBZ1zn9nEGsMOINv5xwcb9\r\n\t GRqldwkBsGPXosjUeSgBg=="
 
 /*
 **  MAIN -- program mainline
@@ -49,6 +51,8 @@ main(int argc, char **argv)
 	dkim_sigkey_t key;
 	unsigned char hdr[MAXHEADER + 1];
 
+	printf("*** simple/relaxed ed25519-sha256 signing\n");
+
 #ifdef USE_GNUTLS
 	(void) gnutls_global_init();
 #endif /* USE_GNUTLS */
@@ -57,15 +61,6 @@ main(int argc, char **argv)
 	lib = dkim_init(NULL, NULL);
 	assert(lib != NULL);
 
-	if (!dkim_libfeature(lib, DKIM_FEATURE_SHA256))
-	{
-		printf("*** relaxed/simple rsa-sha256 signing subdomain with i=/d= mismatch SKIPPED\n");
-		dkim_close(lib);
-		return 0;
-	}
-
-	printf("*** relaxed/simple rsa-sha256 signing subdomain with i=/d= mismatch\n");
-
 #ifdef TEST_KEEP_FILES
 	/* set flags */
 	flags = (DKIM_LIBFLAGS_TMPFILES|DKIM_LIBFLAGS_KEEPFILES);
@@ -73,10 +68,10 @@ main(int argc, char **argv)
 	                    sizeof flags);
 #endif /* TEST_KEEP_FILES */
 
-	key = KEY;
+	key = KEYED25519;
 
-	dkim = dkim_sign(lib, JOBID, NULL, key, SELECTOR, DOMAIN2,
-	                 DKIM_CANON_RELAXED, DKIM_CANON_SIMPLE,
+	dkim = dkim_sign(lib, "test02", NULL, key, SELECTOR, DOMAIN,
+	                 DKIM_CANON_SIMPLE, DKIM_CANON_RELAXED,
 	                 DKIM_SIGN_DEFAULT, -1L, &status);
 	assert(dkim != NULL);
 
@@ -94,8 +89,7 @@ main(int argc, char **argv)
 	status = dkim_header(dkim, HEADER04, strlen(HEADER04));
 	assert(status == DKIM_STAT_OK);
 
-#define	XHEADER05	"From: Murray S. Kucherawy <msk@eng.sendmail.com>"
-	status = dkim_header(dkim, XHEADER05, strlen(XHEADER05));
+	status = dkim_header(dkim, HEADER05, strlen(HEADER05));
 	assert(status == DKIM_STAT_OK);
 
 	status = dkim_header(dkim, HEADER06, strlen(HEADER06));
