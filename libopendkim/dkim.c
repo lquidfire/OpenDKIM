@@ -265,6 +265,7 @@ const u_char *dkim_required_signhdrs[] =
 	NULL
 };
 
+extern void dkim_load_ssl_errors(DKIM *dkim, int status);
 /*
  * Verify a DKIM-RSA-SHA256 signature.
  *
@@ -5973,9 +5974,11 @@ dkim_sig_process(DKIM *dkim, DKIM_SIGINFO *sig)
 			crypto->crypto_key = NULL; // Mark as unused
 
 			// Perform RSA-SHA256 verification
-			vstat = verify_dkim_rsa_sha256(crypto->crypto_pkey,
-				digest, diglen,
-				crypto->crypto_in, crypto->crypto_inlen);
+			vstat = verify_dkim_rsa_sha256(dkim,
+                               crypto->crypto_pkey,
+                               digest, diglen,
+                               crypto->crypto_in, crypto->crypto_inlen,
+                               sig);
 		}
 
 		dkim_sig_load_ssl_errors(dkim, sig, 0);
