@@ -265,7 +265,7 @@ const u_char *dkim_required_signhdrs[] =
 	NULL
 };
 
-extern void dkim_load_ssl_errors(DKIM *dkim, int status);
+static void dkim_load_ssl_errors(DKIM *dkim, int status);
 /*
  * Verify a DKIM-RSA-SHA256 signature.
  *
