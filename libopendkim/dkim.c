@@ -288,45 +288,59 @@ static int verify_dkim_rsa_sha256(DKIM *dkim, EVP_PKEY *pkey,
                                   const unsigned char *sig, size_t siglen,
                                   DKIM_SIGINFO *siginfo)
 {
-    EVP_MD_CTX *md_ctx = NULL;
     EVP_PKEY_CTX *pkey_ctx = NULL;
     int rc = 0;
 
     if (pkey == NULL || digest == NULL || sig == NULL)
         return 0;
 
-    md_ctx = EVP_MD_CTX_new();
-    if (md_ctx == NULL)
+    // Create a PKEY context for verification
+    pkey_ctx = EVP_PKEY_CTX_new(pkey, NULL);
+    if (pkey_ctx == NULL)
     {
         dkim_load_ssl_errors(dkim, 0);
-        dkim_error(dkim,
-                   "s=%s d=%s: failed to allocate EVP_MD_CTX",
+        dkim_error(dkim, "s=%s d=%s: EVP_PKEY_CTX_new failed",
                    dkim_sig_getselector(siginfo),
                    dkim_sig_getdomain(siginfo));
         return 0;
     }
 
-    if (EVP_DigestVerifyInit(md_ctx, &pkey_ctx, EVP_sha256(), NULL, pkey) <= 0)
+    // Initialize for verification
+    if (EVP_PKEY_verify_init(pkey_ctx) <= 0)
     {
         dkim_load_ssl_errors(dkim, 0);
-        dkim_error(dkim,
-                   "s=%s d=%s: EVP_DigestVerifyInit failed",
+        dkim_error(dkim, "s=%s d=%s: EVP_PKEY_verify_init failed",
                    dkim_sig_getselector(siginfo),
                    dkim_sig_getdomain(siginfo));
-        goto done;
+        EVP_PKEY_CTX_free(pkey_ctx);
+        return 0;
     }
 
+    // Set RSA padding
     if (EVP_PKEY_CTX_set_rsa_padding(pkey_ctx, RSA_PKCS1_PADDING) <= 0)
     {
         dkim_load_ssl_errors(dkim, 0);
-        dkim_error(dkim,
-                   "s=%s d=%s: EVP_PKEY_CTX_set_rsa_padding failed",
+        dkim_error(dkim, "s=%s d=%s: EVP_PKEY_CTX_set_rsa_padding failed",
                    dkim_sig_getselector(siginfo),
                    dkim_sig_getdomain(siginfo));
-        goto done;
+        EVP_PKEY_CTX_free(pkey_ctx);
+        return 0;
     }
 
-    rc = EVP_DigestVerify(md_ctx, sig, siglen, digest, diglen);
+    // Set the signature hash algorithm
+    if (EVP_PKEY_CTX_set_signature_md(pkey_ctx, EVP_sha256()) <= 0)
+    {
+        dkim_load_ssl_errors(dkim, 0);
+        dkim_error(dkim, "s=%s d=%s: EVP_PKEY_CTX_set_signature_md failed",
+                   dkim_sig_getselector(siginfo),
+                   dkim_sig_getdomain(siginfo));
+        EVP_PKEY_CTX_free(pkey_ctx);
+        return 0;
+    }
+
+    // Verify the signature against the pre-computed digest
+    rc = EVP_PKEY_verify(pkey_ctx, sig, siglen, digest, diglen);
+
     if (rc != 1)
     {
         unsigned long err = ERR_get_error();
@@ -334,18 +348,14 @@ static int verify_dkim_rsa_sha256(DKIM *dkim, EVP_PKEY *pkey,
         {
             char buf[256];
             ERR_error_string_n(err, buf, sizeof(buf));
-            dkim_error(dkim,
-                       "s=%s d=%s: EVP_DigestVerify failed: %s",
+            dkim_error(dkim, "s=%s d=%s: EVP_PKEY_verify failed: %s",
                        dkim_sig_getselector(siginfo),
                        dkim_sig_getdomain(siginfo),
                        buf);
         }
     }
 
-done:
-    if (md_ctx)
-        EVP_MD_CTX_free(md_ctx);
-
+    EVP_PKEY_CTX_free(pkey_ctx);
     return rc;  // 1 = valid, 0 = invalid, <0 = error
 }
 
