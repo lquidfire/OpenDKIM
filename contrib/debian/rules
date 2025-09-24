@@ -56,9 +56,6 @@ override_dh_install:
 	mv $(CURDIR)/debian/opendkim/usr/lib/opendkim/opendkim.service-generate \
 		$(CURDIR)/debian/opendkim/usr/lib/opendkim/opendkim.service.generate
 
-override_dh_installdeb:
-	dh_installdeb --with python3
-
 override_dh_installchangelogs:
 	dh_installchangelogs RELEASE_NOTES
 
