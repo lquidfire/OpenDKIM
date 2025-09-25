@@ -10,9 +10,15 @@ source library for adding DomainKeys Identified Mail (DKIM) support
 to applications and an example filter application using the milter
 protocol for providing a DKIM service.
 
-## Ed25519 Support
+## Features added so far:
 
-Ed25519 keys are supported! You will need OpenSSL v1.1.1 or higher.
+- *Ed25519* keys are supported! This requires OpenSSL v1.1.1 or higher.
+- *UTF-8* is supported. This required 'libidn2'.
+- *SHA1* has been removed.
+- Modernised code to use *<evp.h>* instead of <sha.h>.
+- configure.ac: Fixed / improved detection logic for ldap, sasl, and lua.
+- Updated and hardened Systemd service.
+- Added *Debian* build artefacts in contrib/debian.
 
 ## Introduction
 
