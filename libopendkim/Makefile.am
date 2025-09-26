@@ -41,8 +41,7 @@ DISTCLEANFILES=symbols.map *.gcno *.gcda
 
 symbols.map: $(libopendkim_include_HEADERS)
 	grep '^extern' $? | \
-		awk '{ for (c = 1; c <= NF; c++) if ($$c ~ /dkim_/) { print $$c; break; } }' | \
-		sed -e s/\[\*\;\]//g -e s/\[\\\[\\\]\]//g | \
+		sed -n 's/^extern[[:space:]]*.*[[:space:]]*\*\?[[:space:]]*\(dkim_[a-zA-Z0-9_]*\)[[:space:]]*[([;].*/\1/p' | \
 		sort -u -o $@
 
 MOSTLYCLEANFILES=symbols.map *.gcno *.gcda
