@@ -839,52 +839,18 @@ main(int argc, char **argv)
 			}
 		}
 
-		#ifdef HAVE_ED25519
-		if (EVP_PKEY_id(pkey) == EVP_PKEY_ED25519)
+		/* Use generic PUBKEY functions for both RSA and Ed25519 keys */
+		status = PEM_write_bio_PUBKEY(outbio, pkey);
+		if (status == 0)
 		{
-			/* Handle Ed25519 keys - use generic PUBKEY functions */
-			status = PEM_write_bio_PUBKEY(outbio, pkey);
-			if (status == 0)
-			{
-				fprintf(stderr,
-						"%s: PEM_write_bio_PUBKEY() failed\n",
-						progname);
-				(void) dkimf_db_close(db);
-				(void) BIO_free(private);
-				(void) EVP_PKEY_free(pkey);
-				(void) BIO_free(outbio);
-				return 1;
-			}
-		}
-		else
-			#endif /* HAVE_ED25519 */
-		{
-			/* Handle RSA keys - use RSA-specific functions */
-			rsa = EVP_PKEY_get1_RSA(pkey);
-			if (rsa == NULL)
-			{
-				fprintf(stderr,
-						"%s: EVP_PKEY_get1_RSA() failed\n",
-						progname);
-				(void) dkimf_db_close(db);
-				(void) BIO_free(private);
-				(void) EVP_PKEY_free(pkey);
-				(void) BIO_free(outbio);
-				return 1;
-			}
-			/* convert private to public */
-			status = PEM_write_bio_RSA_PUBKEY(outbio, rsa);
-			if (status == 0)
-			{
-				fprintf(stderr,
-						"%s: PEM_write_bio_RSA_PUBKEY() failed\n",
-						progname);
-				(void) dkimf_db_close(db);
-				(void) BIO_free(private);
-				(void) EVP_PKEY_free(pkey);
-				(void) BIO_free(outbio);
-				return 1;
-			}
+			fprintf(stderr,
+					"%s: PEM_write_bio_PUBKEY() failed\n",
+					progname);
+			(void) dkimf_db_close(db);
+			(void) BIO_free(private);
+			(void) EVP_PKEY_free(pkey);
+			(void) BIO_free(outbio);
+			return 1;
 		}
 #endif /* USE_GNUTLS */
 
