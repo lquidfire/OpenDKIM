@@ -34,7 +34,7 @@ extern "C" {
 **  	pp == patch number
 */
 
-#define	OPENDKIM_LIB_VERSION	0x03000000
+#define	OPENDKIM_LIB_VERSION	0x@HEX_VERSION@
 
 /* definitions */
 #define	DKIM_ATPSTAG		"atps"	/* ATPS tag name */

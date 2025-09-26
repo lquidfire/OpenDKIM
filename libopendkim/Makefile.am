@@ -21,7 +21,8 @@ if RPATH
 libopendkim_la_LDFLAGS += -rpath $(libdir)
 endif
 libopendkim_includedir = $(includedir)/opendkim
-libopendkim_include_HEADERS = dkim.h
+nodist_libopendkim_include_HEADERS = dkim.h
+EXTRA_DIST = dkim.h.in
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = opendkim.pc
@@ -37,9 +38,9 @@ libopendkim_la_CFLAGS += $(LIBTRE_CPPFLAGS)
 libopendkim_la_LIBADD += $(LIBTRE_LIBS)
 endif
 
-DISTCLEANFILES=symbols.map *.gcno *.gcda
+DISTCLEANFILES=symbols.map *.gcno *.gcda dkim.h
 
-symbols.map: $(libopendkim_include_HEADERS)
+symbols.map: $(libopendkim_include_HEADERS) dkim.h
 	grep '^extern' $? | \
 		sed -n 's/^extern[[:space:]]*.*[[:space:]]*\*\?[[:space:]]*\(dkim_[a-zA-Z0-9_]*\)[[:space:]]*[([;].*/\1/p' | \
 		sort -u -o $@

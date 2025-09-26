@@ -2636,6 +2636,7 @@ AC_CONFIG_FILES([	Makefile
 			contrib/systemd/Makefile
 			contrib/systemd/opendkim.service
 		libopendkim/opendkim.pc libopendkim/Makefile
+			libopendkim/dkim.h
 		libopendkim/docs/Makefile
 		libopendkim/tests/Makefile
 		librbl/rbl.pc librbl/Makefile
