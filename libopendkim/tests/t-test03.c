@@ -24,7 +24,7 @@
 
 #define	MAXHEADER	4096
 
-#define SIG2 "v=1; a=ed25519-sha256; c=simple/simple; d=example.com; s=test;\r\n\tt=1172620939; bh=ll/0h2aWgG+D3ewmE4Y3pY7Ukz8=;\r\n\th=Received:Received:Received:From:To:Date:Subject:Message-ID;\r\n\tb=JsoKzXDo/jojk0oiVb+HrXpApPIan7wj+wSuf5S5DtVvsk7nw3SDFNNOxve1yT49U\r\n\t /3ysgE0ArTYWfUuSvvFhRjT9L/3BIyYd1pwmchsu/LBqJwpMPPMCrNwd5B2SiOS8CU\r\n\t AhxmF26t+zi9B3ocqYqk3Ql/dLmXecs4fae5t8Sg="
+#define SIG2 "v=1; a=rsa-sha1; c=simple/simple; d=example.com; s=test;\r\n\tt=1172620939; bh=ll/0h2aWgG+D3ewmE4Y3pY7Ukz8=;\r\n\th=Received:Received:Received:From:To:Date:Subject:Message-ID;\r\n\tb=JsoKzXDo/jojk0oiVb+HrXpApPIan7wj+wSuf5S5DtVvsk7nw3SDFNNOxve1yT49U\r\n\t /3ysgE0ArTYWfUuSvvFhRjT9L/3BIyYd1pwmchsu/LBqJwpMPPMCrNwd5B2SiOS8CU\r\n\t AhxmF26t+zi9B3ocqYqk3Ql/dLmXecs4fae5t8Sg="
 
 /*
 **  MAIN -- program mainline
@@ -49,7 +49,7 @@ main(int argc, char **argv)
 	dkim_sigkey_t key;
 	unsigned char hdr[MAXHEADER + 1];
 
-	printf("*** simple/simple ed25519-sha256 signing\n");
+	printf("*** simple/simple rsa-sha1 signing\n");
 
 #ifdef USE_GNUTLS
 	(void) gnutls_global_init();
@@ -70,7 +70,7 @@ main(int argc, char **argv)
 
 	dkim = dkim_sign(lib, "test03", NULL, key, SELECTOR, DOMAIN,
 	                 DKIM_CANON_SIMPLE, DKIM_CANON_SIMPLE,
-	                 DKIM_SIGN_DEFAULT, -1L, &status);
+	                 DKIM_SIGN_RSASHA1, -1L, &status);
 	assert(dkim != NULL);
 
 	/* fix signing time */
@@ -152,7 +152,6 @@ main(int argc, char **argv)
 	memset(hdr, '\0', sizeof hdr);
 	status = dkim_getsighdr(dkim, hdr, sizeof hdr,
 	                        strlen(DKIM_SIGNHEADER) + 2);
-printf("Generated signature header:\n%s\n", hdr);
 	assert(status == DKIM_STAT_OK);
 	assert(strcmp(SIG2, hdr) == 0);
 
