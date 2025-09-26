@@ -38,7 +38,7 @@ struct replace
 #endif /* _FFR_REPLACE_RULES */
 
 /* PROTOTYPES */
-extern void dkimf_base64_encode_file __P((int, FILE *, int, int, int));
+extern void dkimf_base64_encode_file __P((int infd, FILE *out, int lm, int rm, int initial));
 extern _Bool dkimf_checkhost __P((DKIMF_DB, char *));
 extern _Bool dkimf_checkip __P((DKIMF_DB, struct sockaddr *));
 #ifdef POPAUTH
