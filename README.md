@@ -19,6 +19,8 @@ protocol for providing a DKIM service.
 - configure.ac: Fixed / improved detection logic for ldap, sasl, and lua.
 - Updated and hardened Systemd service.
 - Added **Debian** build artefacts in contrib/debian.
+- Removed old C prototype macros (__P).
+- The libmilter version now gets updated automatically when the value in 'configure.ac' is bumped.
 
 ## Introduction
 
