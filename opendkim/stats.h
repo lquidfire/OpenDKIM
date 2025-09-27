@@ -43,7 +43,7 @@
 #define DKIMS_SI_MAX		5
 
 /* PROTOTYPES */
-extern void dkimf_stats_init((void);
+extern void dkimf_stats_init(void);
 extern int dkimf_stats_record(char *, u_char *, char *, char *, Header,
                                    DKIM *,
 #ifdef _FFR_STATSEXT
