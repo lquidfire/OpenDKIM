@@ -1,9 +1,6 @@
-i/*
+/*
 **  t-test00NEWER.c -- relaxed/relaxed signing test for RSA and Ed25519
-**
-**  Tests both RSA-SHA256 and Ed25519-SHA256 signatures using the same
-**  message content, verifying that both algorithms can successfully
-**  sign and verify the same message.
+**  Uses centralized test setup functions from t-testdata.h
 */
 
 #include "build-config.h"
@@ -14,13 +11,9 @@ i/*
 #include <stdio.h>
 #include <string.h>
 
-#ifdef USE_GNUTLS
-# include <gnutls/gnutls.h>
-#endif /* USE_GNUTLS */
-
 /* libopendkim includes */
 #include "../dkim.h"
-#include "t-testdata.h"
+#include "t-testdata.h"  /* Now includes centralized setup functions */
 
 #define MAXHEADER 4096
 
@@ -44,7 +37,7 @@ main(void)
         const char *desc;
     } tests[] = {
         { KEY, SELECTOR, "RSA-SHA256" },
-        { KEYED25519, SELECTOR, "Ed25519-SHA256" }
+        { KEYED25519, SELECTORED25519, "Ed25519-SHA256" }
     };
 
     /* Headers to sign */
@@ -61,17 +54,11 @@ main(void)
 
     printf("*** Dual Algorithm DKIM Test Suite ***\n");
 
-#ifdef USE_GNUTLS
-    (void) gnutls_global_init();
-#endif /* USE_GNUTLS */
+    /* Complete test initialization using centralized function */
+    status = dkim_test_setup_all(&lib, fixed_time);
+    assert(status == DKIM_STAT_OK);
 
-    /* Initialize the library */
-    lib = dkim_init(NULL, NULL);
-    assert(lib != NULL);
-
-    /* Set fixed time for reproducible signatures */
-    (void) dkim_options(lib, DKIM_OP_SETOPT, DKIM_OPTS_FIXEDTIME,
-                        &fixed_time, sizeof fixed_time);
+    printf("Using keyfile: %s\n", KEYFILE);
 
     /* Test each algorithm */
     for (size_t i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
@@ -139,20 +126,26 @@ main(void)
             continue;
         }
 
+        /* Add the generated DKIM-Signature header FIRST */
+        snprintf(sig_header, sizeof(sig_header), "%s: %s\r\n", DKIM_SIGNHEADER, hdr);
+        status = dkim_header(verify_dkim, (u_char *)sig_header, strlen(sig_header));
+        assert(status == DKIM_STAT_OK);
+
         /* Process the same headers for verification */
         for (size_t h = 0; h < sizeof(headers)/sizeof(headers[0]); h++) {
             status = dkim_header(verify_dkim, (u_char *)headers[h], strlen(headers[h]));
             assert(status == DKIM_STAT_OK);
         }
 
-        /* Add the generated DKIM-Signature header */
-        snprintf(sig_header, sizeof(sig_header), "%s: %s\r\n", DKIM_SIGNHEADER, hdr);
-        status = dkim_header(verify_dkim, (u_char *)sig_header, strlen(sig_header));
-        assert(status == DKIM_STAT_OK);
-
         /* End of headers */
         status = dkim_eoh(verify_dkim);
-        assert(status == DKIM_STAT_OK);
+        if (status != DKIM_STAT_OK) {
+            printf("FAIL: Header verification failed for %s (status: %d - %s)\n",
+                   tests[i].desc, status,
+                   (status == DKIM_STAT_CANTVRFY) ? "Unable to verify (key lookup failed?)" : "Other error");
+            dkim_free(verify_dkim);
+            continue;
+        }
 
         /* Process the same body for verification */
         for (size_t b = 0; b < sizeof(bodies)/sizeof(bodies[0]); b++) {
@@ -166,8 +159,9 @@ main(void)
             printf("PASS: %s signature verified successfully\n", tests[i].desc);
             passed_tests++;
         } else {
-            printf("FAIL: %s signature verification failed (status: %d)\n",
-                   tests[i].desc, status);
+            printf("FAIL: %s signature verification failed (status: %d - %s)\n",
+                   tests[i].desc, status,
+                   (status == DKIM_STAT_CANTVRFY) ? "Unable to verify (key lookup failed?)" : "Other error");
         }
 
         /* Clean up verification context */
@@ -180,16 +174,13 @@ main(void)
 
     if (passed_tests == total_tests) {
         printf("SUCCESS: All algorithms working correctly\n");
-    } else {
-        printf("FAILURE: Some algorithms failed\n");
-    }
-
-    /* Additional cross-verification test */
-    if (passed_tests == total_tests && total_tests >= 2) {
         printf("\n=== Cross-Algorithm Verification ===\n");
         printf("Both RSA-SHA256 and Ed25519-SHA256 successfully sign and verify\n");
         printf("the same message content using relaxed/relaxed canonicalization.\n");
         printf("This confirms both algorithms are working correctly.\n");
+    } else {
+        printf("FAILURE: Some algorithms failed\n");
+        printf("NOTE: Make sure to run 't-setup' first to create %s\n", KEYFILE);
     }
 
     /* Cleanup */

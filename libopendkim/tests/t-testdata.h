@@ -3,6 +3,8 @@
 **    All rights reserved.
 **
 **  Copyright (c) 2009-2012, The Trusted Domain Project.  All rights reserved.
+**
+**  Copyright 2025 OpenDKIM contributors.
 */
 
 
@@ -12,12 +14,13 @@
 #define	LARGEBODYSIZE	65536
 #define	LARGELINESIZE	4100
 
-#define	KEYFILE		"/tmp/testkeys"
+#define	KEYFILE		"/var/tmp/testkeys"
 
 #define	JOBID		"testing"
 #define	SELECTOR	"test"
 #define	SELECTOR2	"brisbane"
 #define	SELECTOR256	"sha256only"
+#define	SELECTORED25519	"ed25519-sha256"
 #define	SELECTORBADH	"badh"
 #define	SELECTORBADK	"badk"
 #define	SELECTORBADV	"badv"
@@ -112,7 +115,7 @@
 	"XZIZ/dhDhl1nDQIhAK3rADDB4BCfm4WdTQxtYyLkfKiro0EjHcdJCuBD91oBAiB3\n" \
 	"dJk2Cl+yMP+oIqR6bDZQY5lzuaE5v3GMRSSWC94B6A==\n" \
 	"-----END RSA PRIVATE KEY-----\n"
-#define	PUBLICKEY	"v=DKIM1; k=rsa; t=y:s; h=sha1:sha256; p=" \
+#define	PUBLICKEY	"v=DKIM1; k=rsa; t=y:s; h=sha256; p=" \
 	"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4GUGr+d/6SFNzVLYpphnRd0QP" \
 	"GKz2uWnV65RAxa1Pw352BqizqiKOBjgYGzj8pJQSs8tOvv/2k6jpI809RnESqOFg" \
 	"F0gu3UJbNnu3+cd8k/kiQj+q4cKKRpAT92ccxc7svhCNgN1sBGmROYZuysG3Vu3D" \
@@ -127,7 +130,7 @@
 	"IxN2SnFCjxOCKG9v3b4jYfcTNh5ijSsq631uBItLa7od+v" \
 	"/RtdC2UzJ1lWT947qR+Rcac2gbto/NMqJ0fzfVjH4OuKhi" \
 	"tdY9tf6mcwGjaNBcWToIMmPSPDdQPNUYckcQ2QIDAQAB"
-#define	PUBLICKEYBADV	"v=DKIM0; k=rsa; t=y:s; h=sha1:sha256; p=" \
+#define	PUBLICKEYBADV	"v=DKIM0; k=rsa; t=y:s; h=sha256; p=" \
 	"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4GUGr+d/6SFNzVLYpphnRd0QP" \
 	"GKz2uWnV65RAxa1Pw352BqizqiKOBjgYGzj8pJQSs8tOvv/2k6jpI809RnESqOFg" \
 	"F0gu3UJbNnu3+cd8k/kiQj+q4cKKRpAT92ccxc7svhCNgN1sBGmROYZuysG3Vu3D" \
@@ -149,14 +152,14 @@
 	"GKz2uWnV65RAxa1Pw352BqizqiKOBjgYGzj8pJQSs8tOvv/2k6jpI809RnESqOFg" \
 	"F0gu3UJbNnu3+cd8k/kiQj+q4cKKRpAT92ccxc7svhCNgN1sBGmROYZuysG3Vu3D" \
 	"yc079gSLtnSrgXb+gQIDAQAB"
-#define	PUBLICKEYBADK	"v=DKIM1; k=xxx; t=y:s; h=sha1:sha256; p=" \
+#define	PUBLICKEYBADK	"v=DKIM1; k=xxx; t=y:s; sha256; p=" \
 	"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4GUGr+d/6SFNzVLYpphnRd0QP" \
 	"GKz2uWnV65RAxa1Pw352BqizqiKOBjgYGzj8pJQSs8tOvv/2k6jpI809RnESqOFg" \
 	"F0gu3UJbNnu3+cd8k/kiQj+q4cKKRpAT92ccxc7svhCNgN1sBGmROYZuysG3Vu3D" \
 	"yc079gSLtnSrgXb+gQIDAQAB"
-#define	PUBLICKEYEMPTYP	"v=DKIM1; k=rsa; t=y:s; h=sha1:sha256; p="
-#define	PUBLICKEYNOP	"v=DKIM1; k=rsa; t=y:s; h=sha1:sha256"
-#define	PUBLICKEYCORRUPTP	"v=DKIM1; k=rsa; t=y:s; h=sha1:sha256; p=" \
+#define	PUBLICKEYEMPTYP	"v=DKIM1; k=rsa; t=y:s; sha256; p="
+#define	PUBLICKEYNOP	"v=DKIM1; k=rsa; t=y:s; sha256"
+#define	PUBLICKEYCORRUPTP	"v=DKIM1; k=rsa; t=y:s; sha256; p=" \
 	"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4GUGr+d/6SFNzVLYpphnRd0QP" \
 	"GKz2uWnV65RAxa1Pw352BqizqiKOBjgYGzj8pJQSs8tOvv/2k6jpI809RnESqOFg" \
 	"F0gu3UJbNnu3+cd8k/kiQj+q4cKKRpAT92ccxc7svhCNgN1sBGmROYZuysG3Vu3D" \
@@ -164,3 +167,148 @@
 #define	REPORTRECORD	"ra=postmaster; rs=" SMTPTOKENENC
 
 #define	GIBBERISH	"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 !@#$%^&*()_+|-={}[];':,./<>?`~\r\n"
+
+
+/* Common test setup functions */
+
+/*
+**  DKIM_TEST_DNS_SETUP -- Configure DKIM library for file-based DNS lookups
+**
+**  Parameters:
+**  	lib -- DKIM_LIB handle to configure
+**
+**  Return value:
+**  	DKIM_STAT_OK on success, error code on failure
+**
+**  Notes:
+**  	This function configures the DKIM library to use file-based DNS lookups
+**  	instead of real DNS queries. It should be called after dkim_init() but
+**  	before any verification operations. The KEYFILE path is used automatically.
+*/
+static DKIM_STAT
+dkim_test_dns_setup(DKIM_LIB *lib)
+{
+	dkim_query_t qtype = DKIM_QUERY_FILE;
+	DKIM_STAT status;
+
+	assert(lib != NULL);
+
+	/* Configure file-based key lookup */
+	status = dkim_options(lib, DKIM_OP_SETOPT, DKIM_OPTS_QUERYMETHOD,
+	                      &qtype, sizeof qtype);
+	if (status != DKIM_STAT_OK)
+		return status;
+
+	status = dkim_options(lib, DKIM_OP_SETOPT, DKIM_OPTS_QUERYINFO,
+	                      KEYFILE, strlen(KEYFILE));
+	return status;
+}
+
+/*
+**  DKIM_TEST_LIB_SETUP -- Complete DKIM library setup for tests
+**
+**  Parameters:
+**  	lib -- DKIM_LIB handle to configure
+**  	fixed_time -- fixed timestamp for reproducible signatures (optional, 0 to skip)
+**
+**  Return value:
+**  	DKIM_STAT_OK on success, error code on failure
+**
+**  Notes:
+**  	This function performs common DKIM library setup that most tests need:
+**  	- Configures file-based DNS lookups
+**  	- Sets fixed time if requested
+**  	- Can be extended with other common test configurations
+*/
+static DKIM_STAT
+dkim_test_lib_setup(DKIM_LIB *lib, uint64_t fixed_time)
+{
+	DKIM_STAT status;
+
+	assert(lib != NULL);
+
+	/* Set up file-based DNS lookups */
+	status = dkim_test_dns_setup(lib);
+	if (status != DKIM_STAT_OK)
+		return status;
+
+	/* Set fixed time if requested */
+	if (fixed_time != 0) {
+		status = dkim_options(lib, DKIM_OP_SETOPT, DKIM_OPTS_FIXEDTIME,
+		                      &fixed_time, sizeof fixed_time);
+		if (status != DKIM_STAT_OK)
+			return status;
+	}
+
+	return DKIM_STAT_OK;
+}
+
+/*
+**  DKIM_TEST_INIT_GNUTLS -- Initialize GnuTLS if needed
+**
+**  Parameters:
+**  	None
+**
+**  Return value:
+**  	None
+**
+**  Notes:
+**  	This function initializes GnuTLS if the library was built with GnuTLS support.
+**  	It's safe to call multiple times.
+*/
+static void
+dkim_test_init_gnutls(void)
+{
+#ifdef USE_GNUTLS
+	(void) gnutls_global_init();
+#endif /* USE_GNUTLS */
+}
+
+/*
+**  DKIM_TEST_SETUP_ALL -- Complete test initialization
+**
+**  Parameters:
+**  	lib -- pointer to DKIM_LIB handle (will be allocated)
+**  	fixed_time -- fixed timestamp for reproducible signatures (optional, 0 to skip)
+**
+**  Return value:
+**  	DKIM_STAT_OK on success, error code on failure
+**
+**  Notes:
+**  	This function performs all common test setup:
+**  	- Initializes GnuTLS if needed
+**  	- Allocates and initializes DKIM library
+**  	- Configures file-based DNS lookups
+**  	- Sets fixed time if requested
+**
+**  	Example usage:
+**  		DKIM_LIB *lib;
+**  		DKIM_STAT status = dkim_test_setup_all(&lib, 1172620939);
+**  		assert(status == DKIM_STAT_OK);
+*/
+static DKIM_STAT
+dkim_test_setup_all(DKIM_LIB **lib, uint64_t fixed_time)
+{
+	DKIM_STAT status;
+
+	assert(lib != NULL);
+
+	/* Initialize crypto library if needed */
+	dkim_test_init_gnutls();
+
+	/* Initialize the DKIM library */
+	*lib = dkim_init(NULL, NULL);
+	if (*lib == NULL)
+		return DKIM_STAT_NORESOURCE;
+
+	/* Perform common library setup */
+	status = dkim_test_lib_setup(*lib, fixed_time);
+	if (status != DKIM_STAT_OK) {
+		dkim_close(*lib);
+		*lib = NULL;
+		return status;
+	}
+
+	return DKIM_STAT_OK;
+}
+
