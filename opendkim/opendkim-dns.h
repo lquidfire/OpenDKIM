@@ -34,7 +34,7 @@ struct dkimf_filedns;
 # include <unbound.h>
 
 /* prototypes */
-extern int dkimf_unbound_setup((DKIM_LIB *);
+extern int dkimf_unbound_setup(DKIM_LIB *);
 # ifdef _FFR_RBL
 extern int dkimf_rbl_unbound_setup(RBL *);
 # endif /* _FFR_RBL */
