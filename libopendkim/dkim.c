@@ -3988,8 +3988,6 @@ dkim_eom_sign(DKIM *dkim)
 	/* canonicalize */
 	dkim_canon_signature(dkim, &hdr);
 
-	dkim_dstring_free(tmphdr);
-
 	/* finalize */
 	ret = dkim_canon_getfinal(hc, &digest, &diglen);
 	if (ret != DKIM_STAT_OK)
@@ -4199,6 +4197,7 @@ dkim_eom_sign(DKIM *dkim)
 
 	dkim->dkim_signature = sig;
 
+	dkim_dstring_free(tmphdr);
 	return DKIM_STAT_OK;
 }
 
