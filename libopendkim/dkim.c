@@ -2476,7 +2476,7 @@ dkim_siglist_setup(DKIM *dkim)
 		/* canonicalization handle for the headers */
 		status = dkim_add_canon(dkim, TRUE, hdrcanon, hashtype,
 		                        hdrlist, dkim_set_getudata(set),
-		                        0, &hc);
+		                        0, signalg, &hc);
 		if (status != DKIM_STAT_OK)
 			return status;
 		dkim->dkim_siglist[c]->sig_hdrcanon = hc;
@@ -2485,7 +2485,7 @@ dkim_siglist_setup(DKIM *dkim)
 		/* canonicalization handle for the body */
 		status = dkim_add_canon(dkim, FALSE, bodycanon,
 		                        hashtype, NULL, NULL, signlen,
-		                        &bc);
+		                        signalg, &bc);
 		if (status != DKIM_STAT_OK)
 			return status;
 		dkim->dkim_siglist[c]->sig_bodycanon = bc;
@@ -3504,13 +3504,15 @@ dkim_eoh_sign(DKIM *dkim)
 		dkim->dkim_siglist[0]->sig_signalg = dkim->dkim_signalg;
 
 		status = dkim_add_canon(dkim, TRUE, dkim->dkim_hdrcanonalg,
-		                        hashtype, NULL, NULL, 0, &hc);
+		                        hashtype, NULL, NULL, 0,
+					dkim->dkim_signalg, &hc);
 		if (status != DKIM_STAT_OK)
 			return status;
 
 		status = dkim_add_canon(dkim, FALSE, dkim->dkim_bodycanonalg,
 		                        hashtype, NULL, NULL,
-		                        dkim->dkim_signlen, &bc);
+		                        dkim->dkim_signlen, dkim->dkim_signalg,
+					&bc);
 		if (status != DKIM_STAT_OK)
 			return status;
 
@@ -5624,12 +5626,13 @@ dkim_resign(DKIM *new, DKIM *old, _Bool hdrbind)
 	new->dkim_siglist[0]->sig_signalg = new->dkim_signalg;
 
 	status = dkim_add_canon(new, TRUE, new->dkim_hdrcanonalg, hashtype,
-	                        NULL, NULL, 0, &hc);
+	                        NULL, NULL, 0, new->dkim_signalg, &hc);
 	if (status != DKIM_STAT_OK)
 		return status;
 
 	status = dkim_add_canon(old, FALSE, new->dkim_bodycanonalg,
-	                        hashtype, NULL, NULL, new->dkim_signlen, &bc);
+	                        hashtype, NULL, NULL, new->dkim_signlen,
+				new->dkim_signalg, &bc);
 	if (status != DKIM_STAT_OK)
 		return status;
 
