@@ -76,7 +76,6 @@
 # include <openssl/rsa.h>
 # include <openssl/bio.h>
 # include <openssl/err.h>
-# include <openssl/sha.h>
 #endif /* USE_GNUTLS */
 #include <openssl/evp.h>
 
@@ -7699,18 +7698,16 @@ dkim_sig_getreportinfo(DKIM *dkim, DKIM_SIGINFO *sig,
 #ifdef USE_GNUTLS
 		  case DKIM_HASHTYPE_SHA256:
 		  {
-			struct dkim_sha *sha;
+			struct dkim_hash *hash;
 
-			sha = (struct dkim_sha *) sig->sig_hdrcanon->canon_hash;
+			hash = (struct dkim_hash *) sig->sig_hdrcanon->canon_hash;
 			if (hfd != NULL)
-				*hfd = sha->sha_tmpfd;
-
+				*hfd = hash->hash_tmpfd;
 			if (bfd != NULL)
 			{
-				sha = (struct dkim_sha *) sig->sig_bodycanon->canon_hash;
-				*bfd = sha->sha_tmpfd;
+				hash = (struct dkim_hash *) sig->sig_bodycanon->canon_hash;
+				*bfd = hash->hash_tmpfd;
 			}
-
 			break;
 		  }
 #else /* USE_GNUTLS */
