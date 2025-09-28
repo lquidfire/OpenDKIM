@@ -849,6 +849,8 @@ dkim_canon_cleanup(DKIM *dkim)
 **  	hdrlist -- for header canonicalization, the header list
 **  	sighdr -- pointer to header being verified (NULL for signing)
 **  	length -- for body canonicalization, the length limit (-1 == all)
+**		signalg -- signature algorithm (e.g., DKIM_SIGN_RSASHA256,
+**				DKIM_SIGN_ED25519SHA256)
 **  	cout -- DKIM_CANON handle (returned)
 **
 **  Return value:
