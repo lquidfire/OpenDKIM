@@ -153,13 +153,19 @@ struct dkim_siginfo
 };
 
 #ifdef USE_GNUTLS
-/* struct dkim_sha -- stuff needed to do a sha hash */
+/* struct dkim_hash -- stuff needed to do a sha hash */
 struct dkim_hash    // Renamed from dkim_sha
 {
 	int                hash_tmpfd;
 	u_int              hash_outlen;
 	gnutls_hash_hd_t   hash_hd;
 	u_char *           hash_out;
+
+	/* Ed25519 raw canonical data storage */
+	u_char *           hash_raw_data;
+	size_t             hash_raw_len;
+	size_t             hash_raw_alloc;    /* Allocated size */
+	_Bool              hash_store_raw;    /* Flag to enable raw storage */
 };
 #else /* USE_GNUTLS */
 struct dkim_hash     // Renamed from dkim_sha256
@@ -169,6 +175,12 @@ struct dkim_hash     // Renamed from dkim_sha256
 	EVP_MD_CTX *       hash_ctx;        // Renamed from sha256_ctx
 	u_int              hash_outlen;
 	u_char             hash_out[EVP_MAX_MD_SIZE];  // Renamed from sha256_out
+
+	/* Ed25519 raw canonical data storage */
+	u_char *           hash_raw_data;
+	size_t             hash_raw_len;
+	size_t             hash_raw_alloc;    /* Allocated size */
+	_Bool              hash_store_raw;    /* Flag to enable raw storage */
 };
 #endif /* USE_GNUTLS */
 
@@ -178,6 +190,7 @@ struct dkim_canon
 	_Bool			canon_done;
 	_Bool			canon_hdr;
 	_Bool			canon_blankline;
+	_Bool			canon_for_ed25519;  /* Store raw data for Ed25519 */
 	int			canon_lastchar;
 	int			canon_bodystate;
 	u_int			canon_hashtype;

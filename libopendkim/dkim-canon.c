@@ -92,29 +92,35 @@ dkim_canon_free(DKIM *dkim, DKIM_CANON *canon)
 #ifdef USE_GNUTLS
 		  case DKIM_HASHTYPE_SHA256:
 		  {
-			struct dkim_sha *sha;
+			struct dkim_hash *hash;
 
-			sha = (struct dkim_sha *) canon->canon_hash;
+			hash = (struct dkim_hash *) canon->canon_hash;
 
-			if (sha->sha_tmpfd != -1)
+			if (hash->hash_tmpfd != -1)
 			{
-				close(sha->sha_tmpfd);
-				sha->sha_tmpfd = -1;
+				close(hash->hash_tmpfd);
+				hash->hash_tmpfd = -1;
 			}
 
-			gnutls_hash_deinit(sha->sha_hd, NULL);
+			gnutls_hash_deinit(hash->hash_hd, NULL);
 
-			if (sha->sha_out != NULL)
+			if (hash->hash_out != NULL)
 			{
-				DKIM_FREE(dkim, sha->sha_out);
-				sha->sha_out = NULL;
+				DKIM_FREE(dkim, hash->hash_out);
+				hash->hash_out = NULL;
+			}
+
+			/* Clean up raw data buffer */
+			if (hash->hash_raw_data != NULL)
+			{
+				free(hash->hash_raw_data);
+				hash->hash_raw_data = NULL;
 			}
 
 			break;
 		  }
-
 #else /* USE_GNUTLS */
-		  case DKIM_HASHTYPE_SHA256:
+case DKIM_HASHTYPE_SHA256:
 		  {
 			struct dkim_hash *hash;
 
@@ -130,6 +136,13 @@ dkim_canon_free(DKIM *dkim, DKIM_CANON *canon)
 			/* Add EVP context cleanup */
 			if (hash->hash_ctx != NULL)
 				EVP_MD_CTX_free(hash->hash_ctx);
+
+			/* Clean up raw data buffer */
+			if (hash->hash_raw_data != NULL)
+			{
+				free(hash->hash_raw_data);
+				hash->hash_raw_data = NULL;
+			}
 
 			break;
 		  }
@@ -188,14 +201,41 @@ dkim_canon_write(DKIM_CANON *canon, u_char *buf, size_t buflen)
 #ifdef USE_GNUTLS
 	  case DKIM_HASHTYPE_SHA256:
 	  {
-		struct dkim_sha *sha;
+		struct dkim_hash *hash;
 
-		sha = (struct dkim_sha *) canon->canon_hash;
+		hash = (struct dkim_hash *) canon->canon_hash;
 
-		gnutls_hash(sha->sha_hd, buf, buflen);
+		gnutls_hash(hash->hash_hd, buf, buflen);
 
-		if (sha->sha_tmpfd != -1)
-			(void) write(sha->sha_tmpfd, buf, buflen);
+		/* Store raw data if Ed25519 needs it */
+		if (hash->hash_store_raw && buf != NULL && buflen > 0)
+		{
+			/* Grow buffer if needed */
+			if (hash->hash_raw_len + buflen > hash->hash_raw_alloc)
+			{
+				size_t new_size = (hash->hash_raw_alloc + buflen) * 2;
+				if (new_size < 1024) new_size = 1024; /* Minimum size */
+				u_char *new_buf = realloc(hash->hash_raw_data, new_size);
+				if (new_buf != NULL)
+				{
+					hash->hash_raw_data = new_buf;
+					hash->hash_raw_alloc = new_size;
+				}
+				else
+				{
+					/* Handle allocation failure - continue without raw storage */
+					hash->hash_store_raw = FALSE;
+					return;
+				}
+			}
+
+			/* Append data to raw buffer */
+			memcpy(hash->hash_raw_data + hash->hash_raw_len, buf, buflen);
+			hash->hash_raw_len += buflen;
+		}
+
+		if (hash->hash_tmpfd != -1)
+			(void) write(hash->hash_tmpfd, buf, buflen);
 
 		break;
 	  }
@@ -207,6 +247,33 @@ dkim_canon_write(DKIM_CANON *canon, u_char *buf, size_t buflen)
 		hash = (struct dkim_hash *) canon->canon_hash;
 		/* Replace SHA256_Update with EVP_DigestUpdate */
 		EVP_DigestUpdate(hash->hash_ctx, buf, buflen);
+
+		/* Store raw data if Ed25519 needs it */
+		if (hash->hash_store_raw && buf != NULL && buflen > 0)
+		{
+			/* Grow buffer if needed */
+			if (hash->hash_raw_len + buflen > hash->hash_raw_alloc)
+			{
+				size_t new_size = (hash->hash_raw_alloc + buflen) * 2;
+				if (new_size < 1024) new_size = 1024; /* Minimum size */
+				u_char *new_buf = realloc(hash->hash_raw_data, new_size);
+				if (new_buf != NULL)
+				{
+					hash->hash_raw_data = new_buf;
+					hash->hash_raw_alloc = new_size;
+				}
+				else
+				{
+					/* Handle allocation failure - continue without raw storage */
+					hash->hash_store_raw = FALSE;
+					return;
+				}
+			}
+
+			/* Append data to raw buffer */
+			memcpy(hash->hash_raw_data + hash->hash_raw_len, buf, buflen);
+			hash->hash_raw_len += buflen;
+		}
 
 		if (hash->hash_tmpbio != NULL)
 			BIO_write(hash->hash_tmpbio, buf, buflen);
@@ -643,6 +710,12 @@ dkim_canon_init(DKIM *dkim, _Bool tmp, _Bool keep)
 				return DKIM_STAT_INTERNAL;
 			}
 
+			/* Initialize Ed25519 raw data fields */
+			hash->hash_raw_data = NULL;
+			hash->hash_raw_len = 0;
+			hash->hash_raw_alloc = 0;
+			hash->hash_store_raw = cur->canon_for_ed25519;
+
 			if (tmp)
 			{
 				status = dkim_tmpfile(dkim, &fd, keep);
@@ -689,6 +762,12 @@ dkim_canon_init(DKIM *dkim, _Bool tmp, _Bool keep)
 			}
 
 			hash->hash_outlen = EVP_MD_size(md);
+
+			/* Initialize Ed25519 raw data fields */
+			hash->hash_raw_data = NULL;
+			hash->hash_raw_len = 0;
+			hash->hash_raw_alloc = 0;
+			hash->hash_store_raw = cur->canon_for_ed25519;
 
 			if (tmp)
 			{
@@ -779,7 +858,7 @@ dkim_canon_cleanup(DKIM *dkim)
 DKIM_STAT
 dkim_add_canon(DKIM *dkim, _Bool hdr, dkim_canon_t canon, int hashtype,
                u_char *hdrlist, struct dkim_header *sighdr,
-               ssize_t length, DKIM_CANON **cout)
+               ssize_t length, dkim_alg_t signalg, DKIM_CANON **cout)
 {
 	DKIM_CANON *cur;
 	DKIM_CANON *new;
@@ -1905,17 +1984,35 @@ dkim_canon_closebody(DKIM *dkim)
 }
 
 /*
-**  DKIM_CANON_GETFINAL -- retrieve final digest
+**  DKIM_CANON_GETFINAL -- retrieve final canonicalization output
+**
+**  IMPORTANT NAMING INCONSISTENCY: Despite the parameter names suggesting
+**  digest data, this function returns different types of data depending on
+**  the signature algorithm:
+**
+**  - For RSA algorithms (DKIM_SIGN_RSASHA256):
+**    Returns SHA-256 digest of canonicalized data (32 bytes)
+**    The 'digest' parameter name is accurate in this case.
+**
+**  - For Ed25519 algorithms (DKIM_SIGN_ED25519SHA256):
+**    Returns raw canonicalized data (variable length)
+**    The 'digest' parameter name is MISLEADING - this is NOT a digest!
+**
+**  This naming inconsistency exists to maintain API compatibility across
+**  different signature algorithms while using a single unified function.
+**  Ed25519 requires raw canonical data because it performs its own internal
+**  hashing, while RSA operates on pre-computed digests.
+**
+**  TODO: Consider API redesign in next major version to fix parameter naming
 **
 **  Parameters:
 **  	canon -- DKIM_CANON handle
-**  	digest -- pointer to the digest (returned)
-**  	dlen -- digest length (returned)
+**  	digest -- pointer to output data (digest for RSA, raw canonical for Ed25519)
+**  	dlen -- output data length
 **
 **  Return value:
 **  	A DKIM_STAT_* constant.
 */
-
 DKIM_STAT
 dkim_canon_getfinal(DKIM_CANON *canon, u_char **digest, size_t *dlen)
 {
@@ -1931,11 +2028,19 @@ dkim_canon_getfinal(DKIM_CANON *canon, u_char **digest, size_t *dlen)
 #ifdef USE_GNUTLS
 	  case DKIM_HASHTYPE_SHA256:
 	  {
-		struct dkim_sha *sha;
+		struct dkim_hash *hash;
 
-		sha = (struct dkim_sha *) canon->canon_hash;
-		*digest = sha->sha_out;
-		*dlen = sha->sha_outlen;
+		hash = (struct dkim_hash *) canon->canon_hash;
+
+		if (canon->canon_for_ed25519) {
+			/* Ed25519: return raw canonical data (NOT a digest) */
+			*digest = hash->hash_raw_data;
+			*dlen = hash->hash_raw_len;
+		} else {
+			/* RSA: return SHA-256 digest */
+			*digest = hash->hash_out;
+			*dlen = hash->hash_outlen;
+		}
 
 		return DKIM_STAT_OK;
 	  }
@@ -1945,8 +2050,16 @@ dkim_canon_getfinal(DKIM_CANON *canon, u_char **digest, size_t *dlen)
 		struct dkim_hash *hash;
 
 		hash = (struct dkim_hash *) canon->canon_hash;
-		*digest = hash->hash_out;
-		*dlen = hash->hash_outlen;
+
+		if (canon->canon_for_ed25519) {
+			/* Ed25519: return raw canonical data (NOT a digest) */
+			*digest = hash->hash_raw_data;
+			*dlen = hash->hash_raw_len;
+		} else {
+			/* RSA: return SHA-256 digest */
+			*digest = hash->hash_out;
+			*dlen = hash->hash_outlen;
+		}
 
 		return DKIM_STAT_OK;
 	  }
