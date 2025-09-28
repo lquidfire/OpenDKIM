@@ -923,6 +923,7 @@ dkim_add_canon(DKIM *dkim, _Bool hdr, dkim_canon_t canon, int hashtype,
 	new->canon_hashbufsize = 0;
 	new->canon_hashbuf = NULL;
 	new->canon_lastchar = '\0';
+	new->canon_for_ed25519 = (signalg == DKIM_SIGN_ED25519SHA256);
 
 	if (dkim->dkim_canonhead == NULL)
 	{

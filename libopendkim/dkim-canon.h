@@ -25,7 +25,8 @@
 /* prototypes */
 extern DKIM_STAT dkim_add_canon(DKIM *, _Bool, dkim_canon_t, int,
                                      u_char *, struct dkim_header *,
-                                     ssize_t length, DKIM_CANON **);
+                                     ssize_t length, dkim_alg_t,
+                                     DKIM_CANON **);
 extern DKIM_STAT dkim_canon_bodychunk(DKIM *, u_char *, size_t);
 extern void dkim_canon_cleanup(DKIM *);
 extern DKIM_STAT dkim_canon_closebody(DKIM *);
