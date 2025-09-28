@@ -374,9 +374,18 @@ dkim_canon_header_string(struct dkim_dstring *dstr, dkim_canon_t canon,
 	switch (canon)
 	{
 	  case DKIM_CANON_SIMPLE:
+		printf("DEBUG SIMPLE: hdrlen=%zu, crlf=%d\n", hdrlen, crlf);
+		if (hdrlen > 200) {  /* Only show long headers (likely DKIM-Signature) */
+			printf("DEBUG HEADER: %.100s...\n", hdr);  /* Show first 100 chars */
+		}
 		if (!dkim_dstring_catn(dstr, hdr, hdrlen) ||
 		    (crlf && !dkim_dstring_catn(dstr, CRLF, 2)))
 			return DKIM_STAT_NORESOURCE;
+		if (crlf) {
+		printf("DEBUG: Adding CRLF to header (length before: %zu)\n", hdrlen);
+		if (!dkim_dstring_catn(dstr, CRLF, 2))
+			return DKIM_STAT_NORESOURCE;
+		}
 		break;
 
 	  case DKIM_CANON_RELAXED:
@@ -849,8 +858,8 @@ dkim_canon_cleanup(DKIM *dkim)
 **  	hdrlist -- for header canonicalization, the header list
 **  	sighdr -- pointer to header being verified (NULL for signing)
 **  	length -- for body canonicalization, the length limit (-1 == all)
-**		signalg -- signature algorithm (e.g., DKIM_SIGN_RSASHA256,
-**				DKIM_SIGN_ED25519SHA256)
+**  	signalg -- signature algorithm (e.g., DKIM_SIGN_RSASHA256,
+**  				DKIM_SIGN_ED25519SHA256)
 **  	cout -- DKIM_CANON handle (returned)
 **
 **  Return value:
@@ -1309,7 +1318,7 @@ dkim_canon_runheaders(DKIM *dkim)
 			    (hdrset[c]->hdr_flags & DKIM_HDR_SIGNED) != 0)
 			{
 				status = dkim_canon_header(dkim, cur,
-				                           hdrset[c], TRUE);
+				                           hdrset[c], FALSE);
 				if (status != DKIM_STAT_OK)
 				{
 					DKIM_FREE(dkim, hdrset);
@@ -2038,6 +2047,11 @@ dkim_canon_getfinal(DKIM_CANON *canon, u_char **digest, size_t *dlen)
 			/* Ed25519: return raw canonical data (NOT a digest) */
 			*digest = hash->hash_raw_data;
 			*dlen = hash->hash_raw_len;
+
+						/* DEBUG: Add this temporarily */
+			printf("DEBUG Ed25519 getfinal: raw_data=%p, raw_len=%zu\n",
+				hash->hash_raw_data, hash->hash_raw_len);
+
 		} else {
 			/* RSA: return SHA-256 digest */
 			*digest = hash->hash_out;
@@ -2057,6 +2071,10 @@ dkim_canon_getfinal(DKIM_CANON *canon, u_char **digest, size_t *dlen)
 			/* Ed25519: return raw canonical data (NOT a digest) */
 			*digest = hash->hash_raw_data;
 			*dlen = hash->hash_raw_len;
+
+			/* DEBUG: Add this temporarily */
+			printf("DEBUG Ed25519 getfinal: raw_data=%p, raw_len=%zu\n",
+				hash->hash_raw_data, hash->hash_raw_len);
 		} else {
 			/* RSA: return SHA-256 digest */
 			*digest = hash->hash_out;
