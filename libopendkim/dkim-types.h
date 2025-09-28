@@ -36,7 +36,6 @@
 # include <openssl/rsa.h>
 # include <openssl/bio.h>
 # include <openssl/err.h>
-# include <openssl/sha.h>
 # include <openssl/evp.h>
 #endif /* USE_GNUTLS */
 
