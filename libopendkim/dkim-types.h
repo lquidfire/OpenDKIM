@@ -152,8 +152,8 @@ struct dkim_siginfo
 };
 
 #ifdef USE_GNUTLS
-/* struct dkim_sha -- stuff needed to do a sha hash */
-struct dkim_hash    // Renamed from dkim_sha
+/* struct dkim_hash -- stuff needed to do a sha256 hash */
+struct dkim_hash
 {
 	int                hash_tmpfd;
 	u_int              hash_outlen;
@@ -161,7 +161,7 @@ struct dkim_hash    // Renamed from dkim_sha
 	u_char *           hash_out;
 };
 #else /* USE_GNUTLS */
-struct dkim_hash     // Renamed from dkim_sha256
+struct dkim_hash
 {
 	int                hash_tmpfd;
 	BIO *              hash_tmpbio;

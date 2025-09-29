@@ -92,22 +92,22 @@ dkim_canon_free(DKIM *dkim, DKIM_CANON *canon)
 #ifdef USE_GNUTLS
 		  case DKIM_HASHTYPE_SHA256:
 		  {
-			struct dkim_sha *sha;
+			struct dkim_hash *hash;
 
-			sha = (struct dkim_sha *) canon->canon_hash;
+			hash = (struct dkim_hash *) canon->canon_hash;
 
-			if (sha->sha_tmpfd != -1)
+			if (hash->hash_tmpfd != -1)
 			{
-				close(sha->sha_tmpfd);
-				sha->sha_tmpfd = -1;
+				close(hash->hash_tmpfd);
+				hash->hash_tmpfd = -1;
 			}
 
-			gnutls_hash_deinit(sha->sha_hd, NULL);
+			gnutls_hash_deinit(hash->hash_hd, NULL);
 
-			if (sha->sha_out != NULL)
+			if (hash->hash_out != NULL)
 			{
-				DKIM_FREE(dkim, sha->sha_out);
-				sha->sha_out = NULL;
+				DKIM_FREE(dkim, hash->hash_out);
+				hash->hash_out = NULL;
 			}
 
 			break;
@@ -188,14 +188,14 @@ dkim_canon_write(DKIM_CANON *canon, u_char *buf, size_t buflen)
 #ifdef USE_GNUTLS
 	  case DKIM_HASHTYPE_SHA256:
 	  {
-		struct dkim_sha *sha;
+		struct dkim_hash *hash;
 
-		sha = (struct dkim_sha *) canon->canon_hash;
+		hash = (struct dkim_hash *) canon->canon_hash;
 
-		gnutls_hash(sha->sha_hd, buf, buflen);
+		gnutls_hash(hash->hash_hd, buf, buflen);
 
-		if (sha->sha_tmpfd != -1)
-			(void) write(sha->sha_tmpfd, buf, buflen);
+		if (hash->hash_tmpfd != -1)
+			(void) write(hash->hash_tmpfd, buf, buflen);
 
 		break;
 	  }
@@ -1930,11 +1930,11 @@ dkim_canon_getfinal(DKIM_CANON *canon, u_char **digest, size_t *dlen)
 #ifdef USE_GNUTLS
 	  case DKIM_HASHTYPE_SHA256:
 	  {
-		struct dkim_sha *sha;
+		struct dkim_hash *hash;
 
-		sha = (struct dkim_sha *) canon->canon_hash;
-		*digest = sha->sha_out;
-		*dlen = sha->sha_outlen;
+		hash = (struct dkim_hash *) canon->canon_hash;
+		*digest = hash->hash_out;
+		*dlen = hash->hash_outlen;
 
 		return DKIM_STAT_OK;
 	  }
