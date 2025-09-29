@@ -7321,14 +7321,19 @@ dkim_getsighdr_d(DKIM *dkim, size_t initial, u_char **buf, size_t *buflen)
 			/* force wrapping of "b=" ? */
 
 			forcewrap = FALSE;
-			if (sig->sig_keytype == DKIM_KEYTYPE_RSA)
+			if (sig->sig_keytype == DKIM_KEYTYPE_RSA ||
+				sig->sig_keytype == DKIM_KEYTYPE_ED25519)
 			{
 				u_int siglen;
 
-				siglen = BASE64SIZE(sig->sig_keybits / 8);
-				if (strcmp(which, "b") == 0 &&
-				    len + whichlen + siglen + 1 >= dkim->dkim_margin)
-					forcewrap = TRUE;
+				if (sig->sig_keytype == DKIM_KEYTYPE_RSA)
+					siglen = BASE64SIZE(sig->sig_keybits / 8);
+				else  // Ed25519
+					siglen = 88;  // Ed25519 signatures are always 88 base64 characters (64 bytes)
+
+					if (strcmp(which, "b") == 0 &&
+						len + whichlen + siglen + 1 >= dkim->dkim_margin)
+						forcewrap = TRUE;
 			}
 
 			pvlen = strlen(pv);
