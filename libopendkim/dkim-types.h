@@ -167,7 +167,7 @@ struct dkim_hash    // Renamed from dkim_sha
 	_Bool              hash_store_raw;    /* Flag to enable raw storage */
 };
 #else /* USE_GNUTLS */
-struct dkim_hash     // Renamed from dkim_sha256
+struct dkim_hash
 {
 	int                hash_tmpfd;
 	BIO *              hash_tmpbio;
@@ -189,7 +189,6 @@ struct dkim_canon
 	_Bool			canon_done;
 	_Bool			canon_hdr;
 	_Bool			canon_blankline;
-	_Bool			canon_for_ed25519;  /* Store raw data for Ed25519 */
 	int			canon_lastchar;
 	int			canon_bodystate;
 	u_int			canon_hashtype;
