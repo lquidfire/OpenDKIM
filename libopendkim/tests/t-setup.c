@@ -4,6 +4,8 @@
 **
 **  Copyright (c) 2009, 2011, 2012, 2014, The Trusted Domain Project.
 **    All rights reserved.
+**
+**  Copyright 2025 OpenDKIM contributors.
 */
 
 #include "build-config.h"
@@ -12,6 +14,7 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifdef USE_GNUTLS
 # include <gnutls/gnutls.h>
@@ -44,6 +47,14 @@ main(int argc, char **argv)
 
 	fprintf(f, "%s.%s.%s ", SELECTOR, DKIM_DNSKEYNAME, DOMAIN);
 	for (p = PUBLICKEY; *p != '\0'; p++)
+	{
+		if (*p != '\n')
+			putc(*p, f);
+	}
+	fprintf(f, "\n");
+
+	fprintf(f, "%s.%s.%s ", SELECTORED25519, DKIM_DNSKEYNAME, DOMAIN);
+	for (p = PUBLICKEYED25519; *p != '\0'; p++)
 	{
 		if (*p != '\n')
 			putc(*p, f);
