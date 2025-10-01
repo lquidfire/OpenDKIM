@@ -45,7 +45,10 @@ check_PROGRAMS = t-setup t-test00 t-test01 t-test02 t-test03 t-test04 \
 	t-signperf t-verifyperf \
 	t-test00NEW t-test01NEW t-test02NEW t-test03NEW \
 	t-rfc8463 \
-	t-t-test00NEWER
+	t-t-test00NEWER \
+	t-test01DUAL t-test02DUAL t-test03DUAL t-test04DUAL \
+	t-test05DUAL t-test06DUAL
+
 check_SCRIPTS = t-signperf-sha1 t-signperf-relaxed-relaxed \
 	t-signperf-simple-simple
 if ALL_SYMBOLS
@@ -228,6 +231,12 @@ t_test02NEW_SOURCES = t-test02NEW.c t-testdata.h
 t_test03NEW_SOURCES = t-test03NEW.c t-testdata.h
 t_rfc8463_SOURCES = t-rfc8463.c
 t_test00NEWER_SOURCES = t-t-test00NEWER.c t-testdata.h
+t_test01DUAL_SOURCES = t-test01DUAL.c t-testdata.h
+t_test02DUAL_SOURCES = t-test02DUAL.c t-testdata.h
+t_test03DUAL_SOURCES = t-test03DUAL.c t-testdata.h
+t_test04DUAL_SOURCES = t-test04DUAL.c t-testdata.h
+t_test05DUAL_SOURCES = t-test05DUAL.c t-testdata.h
+t_test06DUAL_SOURCES = t-test06DUAL.c t-testdata.h
 
 MOSTLYCLEANFILES=
 

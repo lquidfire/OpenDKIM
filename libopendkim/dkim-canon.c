@@ -307,18 +307,9 @@ dkim_canon_header_string(struct dkim_dstring *dstr, dkim_canon_t canon,
 	switch (canon)
 	{
 	  case DKIM_CANON_SIMPLE:
-		printf("DEBUG SIMPLE: hdrlen=%zu, crlf=%d\n", hdrlen, crlf);
-		if (hdrlen > 200) {  /* Only show long headers (likely DKIM-Signature) */
-			printf("DEBUG HEADER: %.100s...\n", hdr);  /* Show first 100 chars */
-		}
 		if (!dkim_dstring_catn(dstr, hdr, hdrlen) ||
-		    (crlf && !dkim_dstring_catn(dstr, CRLF, 2)))
+			(crlf && !dkim_dstring_catn(dstr, CRLF, 2)))
 			return DKIM_STAT_NORESOURCE;
-		if (crlf) {
-		printf("DEBUG: Adding CRLF to header (length before: %zu)\n", hdrlen);
-		if (!dkim_dstring_catn(dstr, CRLF, 2))
-			return DKIM_STAT_NORESOURCE;
-		}
 		break;
 
 	  case DKIM_CANON_RELAXED:
@@ -1236,7 +1227,7 @@ dkim_canon_runheaders(DKIM *dkim)
 			    (hdrset[c]->hdr_flags & DKIM_HDR_SIGNED) != 0)
 			{
 				status = dkim_canon_header(dkim, cur,
-				                           hdrset[c], FALSE);
+				                           hdrset[c], TRUE);
 				if (status != DKIM_STAT_OK)
 				{
 					DKIM_FREE(dkim, hdrset);
