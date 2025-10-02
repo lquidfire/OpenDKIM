@@ -178,7 +178,7 @@ main(int argc, char **argv)
 
 	resign = dkim_sign(lib, JOBID2, NULL, key, SELECTOR, DOMAIN,
 	                   DKIM_CANON_RELAXED, DKIM_CANON_SIMPLE,
-	                   DKIM_SIGN_DEFAULT, -1L, &status);
+	                   DKIM_SIGN_RSASHA1, -1L, &status);
 	assert(resign != NULL);
 
 	status = dkim_resign(dkim, resign, TRUE);

@@ -182,7 +182,7 @@ main(int argc, char **argv)
 
 	status = dkim_sig_getsignalg(sig, &signalg);
 	assert(status == DKIM_STAT_OK);
-	assert(signalg == DKIM_SIGN_DEFAULT);
+	assert(signalg == DKIM_SIGN_RSASHA1);
 
 	status = dkim_sig_getsigntime(sig, &signtime);
 	assert(status == DKIM_STAT_OK);
