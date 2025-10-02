@@ -1,0 +1,79 @@
+# Makefile.ed25519 - Build configuration for Ed25519-specific tests
+#
+# Add this to libopendkim/tests/Makefile.am or include it
+
+# Ed25519-specific test programs
+ED25519_TESTS = \
+	t-test50ED25519 \
+	t-test51ED25519 \
+	t-test52ED25519 \
+	t-test53ED25519 \
+	t-test54ED25519 \
+	t-test55ED25519
+
+# Add to TESTS variable
+TESTS += $(ED25519_TESTS)
+
+# Add to check_PROGRAMS
+check_PROGRAMS += $(ED25519_TESTS)
+
+# Common dependencies and flags for all Ed25519 tests
+ED25519_COMMON_SOURCES = t-testdata.h
+ED25519_COMMON_LDADD = ../libopendkim.la
+ED25519_COMMON_CFLAGS = -I$(srcdir)/.. $(OPENSSL_CFLAGS)
+
+# t-test50ED25519 - Core signing & verification
+t_test50ED25519_SOURCES = t-test50ED25519.c $(ED25519_COMMON_SOURCES)
+t_test50ED25519_LDADD = $(ED25519_COMMON_LDADD)
+t_test50ED25519_CFLAGS = $(ED25519_COMMON_CFLAGS)
+
+# t-test51ED25519 - Key format tests
+t_test51ED25519_SOURCES = t-test51ED25519.c $(ED25519_COMMON_SOURCES)
+t_test51ED25519_LDADD = $(ED25519_COMMON_LDADD)
+t_test51ED25519_CFLAGS = $(ED25519_COMMON_CFLAGS)
+
+# t-test52ED25519 - DNS record tests
+t_test52ED25519_SOURCES = t-test52ED25519.c $(ED25519_COMMON_SOURCES)
+t_test52ED25519_LDADD = $(ED25519_COMMON_LDADD)
+t_test52ED25519_CFLAGS = $(ED25519_COMMON_CFLAGS)
+
+# t-test53ED25519 - Edge cases
+t_test53ED25519_SOURCES = t-test53ED25519.c $(ED25519_COMMON_SOURCES)
+t_test53ED25519_LDADD = $(ED25519_COMMON_LDADD)
+t_test53ED25519_CFLAGS = $(ED25519_COMMON_CFLAGS)
+
+# t-test54ED25519 - Performance comparison
+t_test54ED25519_SOURCES = t-test54ED25519.c $(ED25519_COMMON_SOURCES)
+t_test54ED25519_LDADD = $(ED25519_COMMON_LDADD)
+t_test54ED25519_CFLAGS = $(ED25519_COMMON_CFLAGS)
+
+# t-test55ED25519 - Chunked processing
+t_test55ED25519_SOURCES = t-test55ED25519.c $(ED25519_COMMON_SOURCES)
+t_test55ED25519_LDADD = $(ED25519_COMMON_LDADD)
+t_test55ED25519_CFLAGS = $(ED25519_COMMON_CFLAGS)
+
+# Optional: Create a target to run only Ed25519 tests
+.PHONY: check-ed25519
+check-ed25519:
+	@echo "Running Ed25519-specific tests..."
+	@for test in $(ED25519_TESTS); do \
+		echo ""; \
+		echo "=== Running $$test ==="; \
+		./$$test || exit 1; \
+	done
+	@echo ""
+	@echo "All Ed25519 tests passed!"
+
+# Optional: Performance benchmark target
+.PHONY: bench-ed25519
+bench-ed25519: t-test54ED25519
+	@echo "Running Ed25519 performance benchmarks..."
+	./t-test54ED25519
+
+# Clean Ed25519 test binaries
+clean-local-ed25519:
+	rm -f $(ED25519_TESTS)
+	rm -f /tmp/test-ed25519-dns.txt
+
+.PHONY: clean-local-ed25519
+clean-local: clean-local-ed25519
