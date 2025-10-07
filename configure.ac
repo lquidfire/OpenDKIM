@@ -32,7 +32,7 @@ m4_define([LIBVERSION_AGE], 0)
 #
 # Autotools setup
 #
-AC_INIT([OpenDKIM],[VERSION_RELEASE.VERSION_MAJOR_REV.VERSION_MINOR_REV]-beta1,[https://github.com/lquidfire/opendkim/issues])
+AC_INIT([OpenDKIM],[VERSION_RELEASE.VERSION_MAJOR_REV.VERSION_MINOR_REV]-beta3,[https://github.com/lquidfire/opendkim/issues])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE(
