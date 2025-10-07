@@ -1350,7 +1350,6 @@ dkim_privkey_load(DKIM *dkim)
 	                                       &crypto->crypto_keysize);
 
 #else /* USE_GNUTLS */
-
 	if (strncmp((char *) dkim->dkim_key, "-----", 5) == 0)
 	{						/* PEM */
 		BIO_reset(crypto->crypto_keydata);
@@ -1381,25 +1380,53 @@ dkim_privkey_load(DKIM *dkim)
 		}
 	}
 
+	/* Auto-detect key type and verify it matches expected algorithm */
+	int key_type = EVP_PKEY_id(crypto->crypto_pkey);
+
+	if (key_type == EVP_PKEY_ED25519)
+	{
+	/* Ed25519 key detected */
+	if (dkim->dkim_signalg == DKIM_SIGN_RSASHA256 ||
+		dkim->dkim_signalg == DKIM_SIGN_UNKNOWN)
+	{
+		dkim->dkim_signalg = DKIM_SIGN_ED25519SHA256;
+
+		/* IMPORTANT: Also update the signature algorithm! */
+		if (dkim->dkim_siglist && dkim->dkim_siglist[0])
+		{
+		dkim->dkim_siglist[0]->sig_signalg = DKIM_SIGN_ED25519SHA256;
+		}
+	}
+	crypto->crypto_keysize = EVP_PKEY_size(crypto->crypto_pkey) * 8;
+	}
+	else if (key_type == EVP_PKEY_RSA)
+	{
+	/* RSA key detected */
 	if (dkim->dkim_signalg == DKIM_SIGN_ED25519SHA256)
 	{
-		crypto->crypto_keysize = EVP_PKEY_size(crypto->crypto_pkey) * 8;
+		dkim_error(dkim, "RSA key provided but Ed25519 algorithm requested");
+		BIO_CLOBBER(crypto->crypto_keydata);
+		return DKIM_STAT_KEYFAIL;
+	}
+	crypto->crypto_keysize = EVP_PKEY_size(crypto->crypto_pkey) * 8;
+	crypto->crypto_key = NULL; // Mark as unused
+	crypto->crypto_pad = RSA_PKCS1_PADDING;
 	}
 	else
 	{
-		crypto->crypto_keysize = EVP_PKEY_size(crypto->crypto_pkey) * 8;
-		crypto->crypto_key = NULL; // Mark as unused
-		crypto->crypto_pad = RSA_PKCS1_PADDING;
+	dkim_error(dkim, "Unsupported key type: %d", key_type);
+	BIO_CLOBBER(crypto->crypto_keydata);
+	return DKIM_STAT_KEYFAIL;
 	}
 
 	crypto->crypto_outlen = crypto->crypto_keysize / 8;
 	crypto->crypto_out = DKIM_MALLOC(dkim, crypto->crypto_outlen);
 	if (crypto->crypto_out == NULL)
 	{
-		dkim_error(dkim, "unable to allocate %d byte(s)",
-		           crypto->crypto_keysize / 8);
-		BIO_CLOBBER(crypto->crypto_keydata);
-		return DKIM_STAT_NORESOURCE;
+	dkim_error(dkim, "unable to allocate %d byte(s)",
+		crypto->crypto_keysize / 8);
+	BIO_CLOBBER(crypto->crypto_keydata);
+	return DKIM_STAT_NORESOURCE;
 	}
 #endif /* USE_GNUTLS */
 
@@ -4028,137 +4055,141 @@ dkim_eom_sign(DKIM *dkim)
 		siglen = crypto->crypto_rsaout.size;
 
 		break;
-	  }
+	}
 #else /* USE_GNUTLS */
-	  case DKIM_SIGN_RSASHA256:
-	  {
-		  struct dkim_crypto *crypto;
-		  EVP_PKEY_CTX *pctx = NULL;
-		  size_t siglen_tmp;
-		  int rc;
-
-		  crypto = (struct dkim_crypto *) sig->sig_signature;
-
-		  /* sanity */
-		  if (crypto == NULL || crypto->crypto_pkey == NULL)
-		  {
-			  dkim_error(dkim, "no crypto key available for RSA signing");
-			  return DKIM_STAT_INTERNAL;
-		  }
-
-		  /* Create a PKEY context for signing */
-		  pctx = EVP_PKEY_CTX_new(crypto->crypto_pkey, NULL);
-		  if (pctx == NULL)
-		  {
-			  dkim_load_ssl_errors(dkim, 0);
-			  dkim_error(dkim, "EVP_PKEY_CTX_new() failed");
-			  BIO_CLOBBER(crypto->crypto_keydata);
-			  return DKIM_STAT_INTERNAL;
-		  }
-
-		  if (EVP_PKEY_sign_init(pctx) <= 0)
-		  {
-			  dkim_load_ssl_errors(dkim, 0);
-			  dkim_error(dkim, "EVP_PKEY_sign_init() failed");
-			  EVP_PKEY_CTX_free(pctx);
-			  BIO_CLOBBER(crypto->crypto_keydata);
-			  return DKIM_STAT_INTERNAL;
-		  }
-
-		  /* Ensure we use PKCS#1 v1.5 padding (required by DKIM/rsa-sha256) */
-		  if (EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PADDING) <= 0)
-		  {
-			  dkim_load_ssl_errors(dkim, 0);
-			  dkim_error(dkim, "EVP_PKEY_CTX_set_rsa_padding() failed");
-			  EVP_PKEY_CTX_free(pctx);
-			  BIO_CLOBBER(crypto->crypto_keydata);
-			  return DKIM_STAT_INTERNAL;
-		  }
-
-		  /* Tell the EVP layer that the input is a SHA256 digest and should be wrapped */
-		  if (EVP_PKEY_CTX_set_signature_md(pctx, EVP_sha256()) <= 0)
-		  {
-			  dkim_load_ssl_errors(dkim, 0);
-			  dkim_error(dkim, "EVP_PKEY_CTX_set_signature_md() failed");
-			  EVP_PKEY_CTX_free(pctx);
-			  BIO_CLOBBER(crypto->crypto_keydata);
-			  return DKIM_STAT_INTERNAL;
-		  }
-
-		  /* Request the required signature length first */
-		  siglen_tmp = crypto->crypto_outlen;
-		  rc = EVP_PKEY_sign(pctx, crypto->crypto_out, &siglen_tmp, digest, diglen);
-		  if (rc <= 0 || siglen_tmp == 0)
-		  {
-			  dkim_load_ssl_errors(dkim, 0);
-			  dkim_error(dkim, "signature generation failed (status %d, length %zu)",
-			             rc, siglen_tmp);
-			  EVP_PKEY_CTX_free(pctx);
-			  BIO_CLOBBER(crypto->crypto_keydata);
-			  return DKIM_STAT_INTERNAL;
-		  }
-
-		  /* success */
-		  EVP_PKEY_CTX_free(pctx);
-
-		  /* record signature pointer/length for downstream use */
-		  l = (unsigned int) siglen_tmp;
-		  crypto->crypto_outlen = l;
-		  signature = crypto->crypto_out;
-		  siglen = crypto->crypto_outlen;
-
-		  break;
-	  }
-
-# ifdef HAVE_ED25519
-	  case DKIM_SIGN_ED25519SHA256:
-	  {
-		EVP_MD_CTX *md_ctx = NULL;
+	case DKIM_SIGN_RSASHA256:
+	{
 		struct dkim_crypto *crypto;
+		EVP_PKEY_CTX *pctx = NULL;
+		size_t siglen_tmp;
+		int rc;
 
 		crypto = (struct dkim_crypto *) sig->sig_signature;
+
+		/* sanity */
+		if (crypto == NULL || crypto->crypto_pkey == NULL)
+		{
+			dkim_error(dkim, "no crypto key available for RSA signing");
+			return DKIM_STAT_INTERNAL;
+		}
+
+		/* Create a PKEY context for signing */
+		pctx = EVP_PKEY_CTX_new(crypto->crypto_pkey, NULL);
+		if (pctx == NULL)
+		{
+			dkim_load_ssl_errors(dkim, 0);
+			dkim_error(dkim, "EVP_PKEY_CTX_new() failed");
+			BIO_CLOBBER(crypto->crypto_keydata);
+			return DKIM_STAT_INTERNAL;
+		}
+
+		if (EVP_PKEY_sign_init(pctx) <= 0)
+		{
+			dkim_load_ssl_errors(dkim, 0);
+			dkim_error(dkim, "EVP_PKEY_sign_init() failed");
+			EVP_PKEY_CTX_free(pctx);
+			BIO_CLOBBER(crypto->crypto_keydata);
+			return DKIM_STAT_INTERNAL;
+		}
+
+		/* Ensure we use PKCS#1 v1.5 padding (required by DKIM/rsa-sha256) */
+		if (EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PADDING) <= 0)
+		{
+			dkim_load_ssl_errors(dkim, 0);
+			dkim_error(dkim, "EVP_PKEY_CTX_set_rsa_padding() failed");
+			EVP_PKEY_CTX_free(pctx);
+			BIO_CLOBBER(crypto->crypto_keydata);
+			return DKIM_STAT_INTERNAL;
+		}
+
+		/* Tell the EVP layer that the input is a SHA256 digest and should be wrapped */
+		if (EVP_PKEY_CTX_set_signature_md(pctx, EVP_sha256()) <= 0)
+		{
+			dkim_load_ssl_errors(dkim, 0);
+			dkim_error(dkim, "EVP_PKEY_CTX_set_signature_md() failed");
+			EVP_PKEY_CTX_free(pctx);
+			BIO_CLOBBER(crypto->crypto_keydata);
+			return DKIM_STAT_INTERNAL;
+		}
+
+		/* Request the required signature length first */
+		siglen_tmp = crypto->crypto_outlen;
+		rc = EVP_PKEY_sign(pctx, crypto->crypto_out, &siglen_tmp, digest, diglen);
+		if (rc <= 0 || siglen_tmp == 0)
+		{
+			dkim_load_ssl_errors(dkim, 0);
+			dkim_error(dkim, "signature generation failed (status %d, length %zu)",
+					rc, siglen_tmp);
+			EVP_PKEY_CTX_free(pctx);
+			BIO_CLOBBER(crypto->crypto_keydata);
+			return DKIM_STAT_INTERNAL;
+		}
+
+		/* success */
+		EVP_PKEY_CTX_free(pctx);
+
+		/* record signature pointer/length for downstream use */
+		l = (unsigned int) siglen_tmp;
+		crypto->crypto_outlen = l;
+		signature = crypto->crypto_out;
+		siglen = crypto->crypto_outlen;
+
+		break;
+	}
+
+#ifdef HAVE_ED25519
+	case DKIM_SIGN_ED25519SHA256:
+	{
+		EVP_MD_CTX *md_ctx = NULL;
+		struct dkim_crypto *crypto;
+		size_t siglen_tmp;
+		unsigned int l;
+
+		crypto = (struct dkim_crypto *) sig->sig_signature;
+
+		if (crypto == NULL || crypto->crypto_pkey == NULL)
+		{
+			dkim_error(dkim, "no crypto key available for Ed25519 signing");
+			return DKIM_STAT_INTERNAL;
+		}
 
 		md_ctx = EVP_MD_CTX_new();
 		if (md_ctx == NULL)
 		{
 			dkim_load_ssl_errors(dkim, 0);
-			dkim_error(dkim,
-			           "failed to initialize digest context");
-
+			dkim_error(dkim, "EVP_MD_CTX_new() failed");
 			return DKIM_STAT_INTERNAL;
 		}
 
-		status = EVP_DigestSignInit(md_ctx, NULL,
-		                            NULL, NULL, crypto->crypto_pkey);
-		if (status == 1)
+		/* Initialize for Ed25519 signing (NULL digest = PureEdDSA mode) */
+		if (EVP_DigestSignInit(md_ctx, NULL, NULL, NULL, crypto->crypto_pkey) <= 0)
 		{
-			l = crypto->crypto_outlen;
-			status = EVP_DigestSign(md_ctx, crypto->crypto_out, &l,
-		                                digest, diglen);
-		}
-
-		if (status != 1)
-		{
-			/* dkim_load_ssl_errors(dkim, 0); */
-			dkim_error(dkim,
-			           "signature generation failed (status %d, length %d, %s)",
-			           status, l, ERR_error_string(ERR_get_error(), NULL));
-
+			dkim_load_ssl_errors(dkim, 0);
+			dkim_error(dkim, "EVP_DigestSignInit() failed for Ed25519");
 			EVP_MD_CTX_free(md_ctx);
-
 			return DKIM_STAT_INTERNAL;
 		}
 
-		crypto->crypto_outlen = l;
-
-		signature = crypto->crypto_out;
-		siglen = crypto->crypto_outlen;
+		/* Sign the SHA-256 digest (Ed25519 treats it as the message) */
+		siglen_tmp = crypto->crypto_outlen;
+		if (EVP_DigestSign(md_ctx, crypto->crypto_out, &siglen_tmp, digest, diglen) <= 0)
+		{
+			dkim_load_ssl_errors(dkim, 0);
+			dkim_error(dkim, "EVP_DigestSign() failed for Ed25519");
+			EVP_MD_CTX_free(md_ctx);
+			return DKIM_STAT_INTERNAL;
+		}
 
 		EVP_MD_CTX_free(md_ctx);
 
+		l = (unsigned int) siglen_tmp;
+		crypto->crypto_outlen = l;
+		signature = crypto->crypto_out;
+		siglen = crypto->crypto_outlen;
+
 		break;
-	  }
-# endif /* HAVE_ED25519 */
+	}
+#endif /* HAVE_ED25519 */
 #endif /* USE_GNUTLS */
 
 	  default:
