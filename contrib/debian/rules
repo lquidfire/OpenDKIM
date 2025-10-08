@@ -67,6 +67,11 @@ override_dh_installdocs:
 	cp README.md README
 	dh_installdocs
 
+override_dh_installman:
+	# Replace @BUILD_DATE@ with today’s date in the opendkim-keygen man page
+	find debian/opendkim-keygen -name '*.1' | xargs sed -i "s|@BUILD_DATE@|$(date +%Y-%m-%d)|g"
+	dh_installman
+
 override_dh_auto_clean:
 	dh_auto_clean
 	rm -f $(CURDIR)/opendkim/tests/*.sock

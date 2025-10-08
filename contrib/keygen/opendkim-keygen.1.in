@@ -1,5 +1,5 @@
 .\" Copyright 2024 OpenARC contributors.
-.\" Copyright 2025 OpenDKIM contributors.
+.\" Copyright 2025 OpenDKIM contributors. (Only minor changes)
 .\" See LICENSE.
 .Dd @BUILD_DATE@
 .Dt OPENDKIM-KEYGEN 1
@@ -90,7 +90,7 @@ this does not have any practical effect.
 A name for the key.
 
 .It Fl t , Fl \-type Brq Cm rsa | Cm ed25519
-Type of key to generate, defaults to RSA.
+Type of key to generate, defaults to RSA. Use ed25519 for Ed25519 keys.
 
 .It Fl \-testing
 Tag the public key to indicate that this domain is testing its
@@ -113,12 +113,14 @@ to run this command as the user that the
 .Xr opendkim 8
 daemon is configured to run as, so that the file permissions are correct.
 
-.Dl sudo -u opendkim opendkim-keygen -D /etc/opendkim/keys -d example.com -s 20250916
+.Dl sudo -u opendkim opendkim-keygen -D /etc/opendkim/keys -d example.com -s selector
 
 .Sh SEE ALSO
 .Bl -item
 .It
 .Xr opendkim 8
+.It
+.Xr opendkim.conf 5
 .It
 .Xr openssl 1
 .It
