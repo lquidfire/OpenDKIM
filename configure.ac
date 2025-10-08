@@ -878,8 +878,8 @@ then
 	CFLAGS="$LIBCRYPTO_CFLAGS $saved_CFLAGS"
 	LDFLAGS="$outer_LDFLAGS $LIBCRYPTO_LIBDIRS $saved_LDFLAGS"
 
-	AC_CHECK_HEADERS([openssl/bio.h openssl/conf.h openssl/crypto.h openssl/err.h openssl/evp.h openssl/md5.h openssl/opensslv.h openssl/pem.h openssl/rsa.h openssl/sha.h openssl/ssl.h], ,
-                 	AC_MSG_ERROR([required OpenSSL header not found]))
+	AC_CHECK_HEADERS([openssl/bio.h openssl/conf.h openssl/crypto.h openssl/err.h openssl/evp.h openssl/opensslv.h openssl/pem.h openssl/rsa.h openssl/ssl.h], ,
+		AC_MSG_ERROR([required OpenSSL header not found]))
 
 	# -ldl is needed to assist with compilation of static openssl libraries.
 	# It appears to need dl for opening engine plugins. It fails at load
@@ -900,7 +900,7 @@ then
 	              AC_MSG_ERROR([SHA256 support is required]),
 	              [
 #include <sys/types.h>
-#include <openssl/sha.h>])
+#include <openssl/evp.h>])
 
 	CFLAGS="$saved_CFLAGS"
 	CPPFLAGS="$saved_CPPFLAGS"
